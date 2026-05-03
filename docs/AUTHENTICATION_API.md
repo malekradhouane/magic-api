@@ -1,6 +1,6 @@
 # Authentication API - Frontend Integration Guide
 
-This document provides detailed technical specifications for frontend developers integrating with the Trippy authentication system.
+This document provides detailed technical specifications for frontend developers integrating with the Magic authentication system.
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ This document provides detailed technical specifications for frontend developers
 
 ## Overview
 
-The Trippy authentication system supports two authentication methods:
+The Magic authentication system supports two authentication methods:
 - **Password-based authentication** (email/password)
 - **OAuth authentication** (Google, with extensible support for other providers)
 

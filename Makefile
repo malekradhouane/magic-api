@@ -50,8 +50,7 @@ $(MAGIC_BIN): $(MAGIC_SOURCES)
 
 .PHONY: run
 run: $(MAGIC_BIN)
-	@echo "Loading environment variables from .env"
-	@set -a && . ./.env && set +a && $(MAGIC_BIN)
+	@$(MAGIC_BIN)
 
 .PHONY: tidy
 tidy:

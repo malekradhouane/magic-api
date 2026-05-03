@@ -2,11 +2,11 @@
     "swagger": "2.0",
     "info": {
         "description": "Here is our solution documentation and testing portal of provided functionalities to interact with our hypervisor tool.",
-        "title": "Trippy - Inventory solution API",
-        "termsOfService": "https://www.trippy.com/terms/",
+        "title": "Magic - Inventory solution API",
+        "termsOfService": "https://www.magic.com/terms/",
         "contact": {
             "name": "API Support",
-            "url": "https://www.trippy.fr/support",
+            "url": "https://www.magic.fr/support",
             "email": "malek.radhouen@gmail.com"
         },
         "license": {
@@ -39,7 +39,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Credential"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Credential"
                         }
                     }
                 ],
@@ -49,13 +49,13 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.JSONResult"
+                                    "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.JSONResult"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "result": {
-                                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Token"
+                                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Token"
                                         },
                                         "success": {
                                             "type": "boolean"
@@ -68,13 +68,13 @@
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError401"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError401"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -120,19 +120,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -187,20 +187,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -229,19 +229,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -285,25 +285,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -335,19 +335,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -402,20 +402,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -449,20 +449,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.User"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.User"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -506,25 +506,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -565,19 +565,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -630,25 +630,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -686,7 +686,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                         }
                     }
                 ],
@@ -694,19 +694,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -747,19 +747,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -802,7 +802,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                         }
                     }
                 ],
@@ -810,25 +810,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -867,19 +867,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -934,20 +934,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -985,7 +985,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                         }
                     }
                 ],
@@ -993,19 +993,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1046,19 +1046,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1101,7 +1101,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                         }
                     }
                 ],
@@ -1109,25 +1109,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1166,19 +1166,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1238,20 +1238,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Organization"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Organization"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1295,19 +1295,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Organization"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Organization"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1343,25 +1343,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Organization"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Organization"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1412,25 +1412,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Organization"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Organization"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1469,19 +1469,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1536,20 +1536,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1604,20 +1604,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1672,20 +1672,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Product"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Product"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1740,20 +1740,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1808,20 +1808,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1869,20 +1869,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -1937,20 +1937,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.UOM"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.UOM"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2005,20 +2005,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2056,7 +2056,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Product"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Product"
                         }
                     }
                 ],
@@ -2064,19 +2064,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Product"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Product"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2117,19 +2117,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Product"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Product"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2172,7 +2172,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Product"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Product"
                         }
                     }
                 ],
@@ -2180,25 +2180,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Product"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Product"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2237,19 +2237,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2304,20 +2304,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2372,20 +2372,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Lot"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Lot"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2423,19 +2423,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.JSONResult"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.JSONResult"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError401"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError401"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2496,7 +2496,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                         }
                     }
                 ],
@@ -2504,19 +2504,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2557,19 +2557,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2612,7 +2612,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                         }
                     }
                 ],
@@ -2620,25 +2620,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2677,19 +2677,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2727,7 +2727,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                         }
                     }
                 ],
@@ -2735,19 +2735,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2788,19 +2788,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2843,7 +2843,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                         }
                     }
                 ],
@@ -2851,25 +2851,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2908,19 +2908,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -2975,20 +2975,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3026,7 +3026,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.UOM"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.UOM"
                         }
                     }
                 ],
@@ -3034,19 +3034,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.UOM"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.UOM"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3087,19 +3087,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.UOM"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.UOM"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3142,7 +3142,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.UOM"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.UOM"
                         }
                     }
                 ],
@@ -3150,25 +3150,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.UOM"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.UOM"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3207,19 +3207,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3253,14 +3253,14 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.User"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.User"
                             }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3292,7 +3292,7 @@
                     "201": {
                         "description": "User created successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.User"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.User"
                         }
                     },
                     "400": {
@@ -3355,13 +3355,13 @@
                     "200": {
                         "description": "User",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.User"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.User"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3401,19 +3401,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3459,25 +3459,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.User"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.User"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3511,20 +3511,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3572,20 +3572,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Company"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Company"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3623,7 +3623,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                         }
                     }
                 ],
@@ -3631,19 +3631,19 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3684,19 +3684,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3739,7 +3739,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                         }
                     }
                 ],
@@ -3747,25 +3747,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.Warehouse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3804,19 +3804,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -3871,20 +3871,20 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove"
+                                "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.StockMove"
                             }
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError"
+                            "$ref": "#/definitions/github_com_magic-tn_magic-api_utils_httpresp.HTTPError"
                         }
                     }
                 }
@@ -4090,7 +4090,7 @@
             "type": "object",
             "additionalProperties": {}
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Company": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Company": {
             "type": "object",
             "properties": {
                 "brandName": {
@@ -4134,7 +4134,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Credential": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Credential": {
             "type": "object",
             "properties": {
                 "password": {
@@ -4147,7 +4147,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.InventoryLevel": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.InventoryLevel": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -4182,11 +4182,11 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.JSONB": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.JSONB": {
             "type": "object",
             "additionalProperties": true
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Lot": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Lot": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -4205,7 +4205,7 @@
                     "type": "string"
                 },
                 "metadata": {
-                    "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.JSONB"
+                    "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.JSONB"
                 },
                 "organizationId": {
                     "type": "string"
@@ -4226,7 +4226,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Organization": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Organization": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -4249,10 +4249,10 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Product": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Product": {
             "type": "object"
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.StockMove": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.StockMove": {
             "type": "object",
             "properties": {
                 "companyId": {
@@ -4271,7 +4271,7 @@
                     "type": "string"
                 },
                 "metadata": {
-                    "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.JSONB"
+                    "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.JSONB"
                 },
                 "movedAt": {
                     "type": "string"
@@ -4301,7 +4301,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.StockMoveSplit": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.StockMoveSplit": {
             "type": "object",
             "properties": {
                 "costValue": {
@@ -4336,7 +4336,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Token": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Token": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -4354,7 +4354,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.UOM": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.UOM": {
             "type": "object",
             "properties": {
                 "category": {
@@ -4383,7 +4383,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.User": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.User": {
             "type": "object",
             "properties": {
                 "avatar_url": {
@@ -4469,11 +4469,11 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_pkg_interfaces.Warehouse": {
+        "github_com_magic-tn_magic-api_pkg_interfaces.Warehouse": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/github_com_trippy-tn_trippy-api_pkg_interfaces.JSONB"
+                    "$ref": "#/definitions/github_com_magic-tn_magic-api_pkg_interfaces.JSONB"
                 },
                 "code": {
                     "type": "string"
@@ -4501,7 +4501,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError": {
+        "github_com_magic-tn_magic-api_utils_httpresp.HTTPError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -4521,7 +4521,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_utils_httpresp.HTTPError401": {
+        "github_com_magic-tn_magic-api_utils_httpresp.HTTPError401": {
             "type": "object",
             "properties": {
                 "code": {
@@ -4541,7 +4541,7 @@
                 }
             }
         },
-        "github_com_trippy-tn_trippy-api_utils_httpresp.JSONResult": {
+        "github_com_magic-tn_magic-api_utils_httpresp.JSONResult": {
             "type": "object",
             "properties": {
                 "code": {

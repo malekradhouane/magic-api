@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -88,18 +90,41 @@ func Authenticate(c *gin.Context) {
 
 func (ctrl *controller) Identity(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
-	if _, ok := claims[ctrl.ginJWT.IdentityKey]; ok {
-		user := interfaces.Identity{
-			UserName:  claims[ctrl.ginJWT.IdentityKey].(string),
-			FirstName: claims["firstName"].(string),
-			LastName:  claims["lastName"].(string),
-			Role:      claims["role"].(string),
-		}
-
-		httpresp.NewResult(c, http.StatusOK, user)
-	} else {
+	if _, ok := claims[ctrl.ginJWT.IdentityKey]; !ok {
 		httpresp.NewErrorMessage(c, http.StatusUnauthorized, "User is not authenticated!")
+		return
 	}
+
+	getStr := func(key string) string {
+		if v, ok := claims[key]; ok && v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+		return ""
+	}
+	getBool := func(key string) bool {
+		if v, ok := claims[key]; ok && v != nil {
+			if b, ok := v.(bool); ok {
+				return b
+			}
+		}
+		return false
+	}
+
+	user := interfaces.Identity{
+		ID:               getStr("id"),
+		UserName:         getStr(ctrl.ginJWT.IdentityKey),
+		FirstName:        getStr("firstName"),
+		LastName:         getStr("lastName"),
+		Email:            getStr("email"),
+		Role:             getStr("role"),
+		EmailVerified:    getBool("emailVerified"),
+		ProfileCompleted: getBool("profileCompleted"),
+		OrganizationID:   getStr("organizationID"),
+	}
+
+	httpresp.NewResult(c, http.StatusOK, user)
 }
 
 // Logout godoc
@@ -204,11 +229,19 @@ func (ctrl *controller) CompleteAuth(c *gin.Context) {
 	provider := c.Param("provider")
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "provider", provider))
 
+	// Resolve the frontend URL for redirect (after OAuth completion)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	callbackPath := frontendURL + "/auth/callback"
+
 	gothUser, err := gothic.CompleteUserAuth(c.Writer, c.Request)
 	if err != nil {
-		httpresp.NewErrorMessage(c, http.StatusUnauthorized, err.Error())
+		c.Redirect(http.StatusTemporaryRedirect, callbackPath+"?error="+url.QueryEscape(err.Error()))
 		return
 	}
+
 	signUpReq := &api.SignUpRequest{
 		Email:      gothUser.Email,
 		Username:   gothUser.NickName,
@@ -217,28 +250,38 @@ func (ctrl *controller) CompleteAuth(c *gin.Context) {
 		AvatarURL:  gothUser.AvatarURL,
 		Provider:   provider,
 		ProviderID: gothUser.UserID,
-		Role:       "user", // or default role logic
+		Role:       "user",
 	}
 	user, err := ctrl.authService.SignUpWithOAuth(c.Request.Context(), signUpReq)
 	if err != nil {
-		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
+		c.Redirect(http.StatusTemporaryRedirect, callbackPath+"?error="+url.QueryEscape(err.Error()))
 		return
 	}
 
+	expireAt := time.Now().UTC().Add(time.Hour * 14)
 	token, err := ctrl.createToken(&interfaces.Identity{
-		UserName:  user.User.Username,
-		FirstName: user.User.FirstName,
-		LastName:  user.User.LastName,
-		ID:        user.User.ID.String(),
-		Role:      user.User.Role,
-	}, time.Now().UTC().Add(time.Hour*14))
+		UserName:      user.User.Username,
+		FirstName:     user.User.FirstName,
+		LastName:      user.User.LastName,
+		ID:            user.User.ID.String(),
+		Email:         user.User.Email,
+		EmailVerified: user.User.EmailVerified,
+		Role:          user.User.Role,
+	}, expireAt)
 	if err != nil {
-		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
+		c.Redirect(http.StatusTemporaryRedirect, callbackPath+"?error="+url.QueryEscape(err.Error()))
 		return
 	}
 
-	t := interfaces.Token{AccessToken: token, RefreshToken: token, Expiration: time.Now().UTC().Add(time.Hour * 14)}
-	httpresp.NewResult(c, http.StatusOK, t)
+	// Redirect to the frontend callback page with the tokens in query params
+	redirectURL := fmt.Sprintf(
+		"%s?token=%s&refresh_token=%s&expire=%s",
+		callbackPath,
+		url.QueryEscape(token),
+		url.QueryEscape(token),
+		url.QueryEscape(expireAt.Format(time.RFC3339)),
+	)
+	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 // ActivateAccount godoc

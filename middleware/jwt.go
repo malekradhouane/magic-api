@@ -150,11 +150,13 @@ func (x *GinJWT) login(c *gin.Context, creds interfaces.Credential) (*interfaces
 	}
 
 	identity := &interfaces.Identity{
-		ID:        user.ID.String(),
-		UserName:  user.Username,
-		Role:      user.Role,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
+		ID:            user.ID.String(),
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		UserName:      user.Username,
+		Role:          user.Role,
+		FirstName:     user.FirstName,
+		LastName:      user.LastName,
 	}
 	return identity, nil
 }
