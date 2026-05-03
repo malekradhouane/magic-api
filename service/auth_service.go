@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/malekradhouane/trippy/api"
-	"github.com/malekradhouane/trippy/errs"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
-	"github.com/malekradhouane/trippy/pkg/mailer"
-	"github.com/malekradhouane/trippy/pkg/mailer/template"
-	"github.com/malekradhouane/trippy/store/types"
-	"github.com/malekradhouane/trippy/utils/encrypt"
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/pkg/mailer"
+	"github.com/malekradhouane/magic/pkg/mailer/template"
+	"github.com/malekradhouane/magic/store/types"
+	"github.com/malekradhouane/magic/utils/encrypt"
 )
 
 // AuthIdentity represents an authentication method for a user
@@ -290,9 +290,9 @@ func (as *AuthService) SendPasswordResetEmail(ctx context.Context, user *interfa
 	}
 
 	err = as.mailer.Send(ctx,
-		"Trippy", "noreply@trippy.fr",
+		"Magic", "noreply@magic.fr",
 		user.FirstName+" "+user.LastName, user.Email,
-		"Reset your Trippy password",
+		"Reset your Magic password",
 		"Please reset your password by clicking the link: "+resetLink,
 		htmlContent,
 	)
@@ -391,9 +391,9 @@ func (as *AuthService) SendActivationEmail(ctx context.Context, user *interfaces
 	}
 
 	err = as.mailer.Send(ctx,
-		"Trippy", "noreply@trippy.fr",
+		"Magic", "noreply@magic.fr",
 		user.FirstName+" "+user.LastName, user.Email,
-		"Activate your Trippy account",
+		"Activate your Magic account",
 		"Please activate your account by clicking the link: "+activationLink,
 		htmlContent,
 	)

@@ -77,11 +77,11 @@ func Setup() (*Resources, error) {
 				host, port, user, dbname)
 
 			// Allow overriding SSL mode via environment variable. Defaults to "require" for production.
-			sslmode := os.Getenv("TRIPPY_PG_SSLMODE")
+			sslmode := os.Getenv("MAGIC_PG_SSLMODE")
 			if sslmode == "" {
 				sslmode = "require"
 			}
-			
+
 			if host != "" && user != "" && password != "" && dbname != "" {
 				if port == "" {
 					port = "5432"

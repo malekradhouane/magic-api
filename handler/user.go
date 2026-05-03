@@ -9,12 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 
-	"github.com/malekradhouane/trippy/api"
-	"github.com/malekradhouane/trippy/errs"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
-	"github.com/malekradhouane/trippy/service"
-	"github.com/malekradhouane/trippy/trippy/configmanager"
-	"github.com/malekradhouane/trippy/utils/httpresp"
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/magic/configmanager"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/service"
+	"github.com/malekradhouane/magic/utils/httpresp"
 )
 
 // UserHandler represents users handler actions

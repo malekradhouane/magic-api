@@ -1,7 +1,7 @@
 storages:
-  - name: pg-trippy-api
+  - name: pg-magic-api
     enabled: true
     driver: pg
-    dbURI: "postgresql://admin:trippy-api@localhost:5435/trippydb?sslmode=disable"
-    schemaFolder: "file://migrations/pg/trippy"
+    dbURI: "postgresql://admin:magic-api@localhost:5435/magicdb?sslmode=disable"
+    schemaFolder: "file://migrations/pg/magic"
     forceSchemaVersion: 1

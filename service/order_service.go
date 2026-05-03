@@ -1,0 +1,330 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/store/types"
+)
+
+const (
+	// FreeShippingThreshold: livraison gratuite au-delà
+	FreeShippingThreshold = 150.0
+	// StandardShippingFee in TND
+	StandardShippingFee = 8.0
+	// OrderNumberPrefix: AFR-YYYYMMDD-XXXX
+	OrderNumberPrefix = "AFR"
+)
+
+// OrderService handles order business logic
+type OrderService struct {
+	orderStore   types.OrderStore
+	productStore types.ProductStore
+	promoService *PromoService
+	logger       *logrus.Logger
+}
+
+// NewOrderService constructs an OrderService
+func NewOrderService(
+	orderStore types.OrderStore,
+	productStore types.ProductStore,
+	promoService *PromoService,
+	logger *logrus.Logger,
+) *OrderService {
+	if logger == nil {
+		logger = logrus.New()
+	}
+	return &OrderService{
+		orderStore:   orderStore,
+		productStore: productStore,
+		promoService: promoService,
+		logger:       logger,
+	}
+}
+
+// Create builds and persists an order from a CreateOrderRequest
+// userID is empty string for guest checkout
+func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest, userID string) (*interfaces.Order, error) {
+	if len(req.Items) == 0 {
+		return nil, fmt.Errorf("order has no items")
+	}
+
+	// 1. Validate items & build line items + compute subtotal
+	subtotal := 0.0
+	items := make([]interfaces.OrderItem, 0, len(req.Items))
+
+	for _, lineReq := range req.Items {
+		if lineReq.Quantity <= 0 {
+			return nil, fmt.Errorf("invalid quantity for product %s", lineReq.ProductID)
+		}
+
+		product, err := os.productStore.GetByID(ctx, lineReq.ProductID)
+		if err != nil {
+			os.logger.WithError(err).
+				WithField("product_id", lineReq.ProductID).
+				Error("Failed to load product for order")
+			return nil, fmt.Errorf("product %s not found", lineReq.ProductID)
+		}
+		if !product.IsActive {
+			return nil, fmt.Errorf("product %s is not available", product.Name)
+		}
+
+		// Stock check on size
+		if lineReq.Size != "" {
+			ok := false
+			for _, ps := range product.Sizes {
+				if ps.Size == lineReq.Size && ps.Stock >= lineReq.Quantity {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				return nil, fmt.Errorf("insufficient stock for product %s size %s", product.Name, lineReq.Size)
+			}
+		}
+
+		lineTotal := product.Price * float64(lineReq.Quantity)
+		subtotal += lineTotal
+
+		// Snapshot main image
+		var mainImage string
+		for _, img := range product.Images {
+			if img.IsPrimary || mainImage == "" {
+				mainImage = img.URL
+				if img.IsPrimary {
+					break
+				}
+			}
+		}
+
+		productID := product.ID
+		items = append(items, interfaces.OrderItem{
+			ProductID:    &productID,
+			ProductName:  product.Name,
+			ProductImage: mainImage,
+			ProductSlug:  product.Slug,
+			Size:         lineReq.Size,
+			Color:        lineReq.Color,
+			UnitPrice:    product.Price,
+			Quantity:     lineReq.Quantity,
+			LineTotal:    lineTotal,
+		})
+	}
+
+	// 2. Compute shipping fee
+	shippingFee := StandardShippingFee
+	if subtotal >= FreeShippingThreshold {
+		shippingFee = 0
+	}
+
+	// 3. Apply promo code (if any)
+	discount := 0.0
+	var appliedPromo *interfaces.PromoCode
+	var promoCodeStr *string
+	if req.PromoCode != "" {
+		validation, err := os.promoService.Validate(ctx, req.PromoCode, subtotal, userID)
+		if err != nil {
+			return nil, err
+		}
+		if !validation.Valid {
+			return nil, fmt.Errorf("invalid promo code: %s", validation.Message)
+		}
+		discount = validation.DiscountAmount
+		// Reload the promo for usage tracking
+		promo, err := os.promoService.GetByCode(ctx, req.PromoCode)
+		if err == nil {
+			appliedPromo = promo
+			pc := promo.Code
+			promoCodeStr = &pc
+		}
+	}
+
+	totalPrice := subtotal + shippingFee - discount
+	if totalPrice < 0 {
+		totalPrice = 0
+	}
+
+	// 4. Build order
+	paymentMethod := req.PaymentMethod
+	if paymentMethod == "" {
+		paymentMethod = interfaces.PaymentMethodCash
+	}
+
+	order := &interfaces.Order{
+		OrderNumber:    generateOrderNumber(),
+		Status:         interfaces.OrderStatusPending,
+		Subtotal:       subtotal,
+		ShippingFee:    shippingFee,
+		DiscountAmount: discount,
+		TotalPrice:     totalPrice,
+		Currency:       "TND",
+		PromoCode:      promoCodeStr,
+		PaymentMethod:  paymentMethod,
+		PaymentStatus:  interfaces.PaymentStatusPending,
+		ShippingInfo:   req.ShippingInfo,
+		CustomerNotes:  req.CustomerNotes,
+	}
+	if userID != "" {
+		uid, err := uuid.Parse(userID)
+		if err == nil {
+			order.UserID = &uid
+		}
+	}
+
+	// 5. Persist
+	created, err := os.orderStore.Create(ctx, order, items)
+	if err != nil {
+		os.logger.WithError(err).Error("Failed to persist order")
+		return nil, err
+	}
+
+	// 6. Best-effort: decrement stock & track promo usage (non-blocking failures logged)
+	for _, item := range items {
+		if item.ProductID != nil && item.Size != "" {
+			if err := os.productStore.DecrementSizeStock(ctx, item.ProductID.String(), item.Size, item.Quantity); err != nil {
+				os.logger.WithError(err).
+					WithFields(logrus.Fields{
+						"product_id": item.ProductID.String(),
+						"size":       item.Size,
+					}).Warn("Failed to decrement stock")
+			}
+		}
+	}
+
+	if appliedPromo != nil {
+		if err := os.promoService.MarkUsed(ctx, appliedPromo, userID, created.ID.String(), discount); err != nil {
+			os.logger.WithError(err).Warn("Failed to record promo usage")
+		}
+	}
+
+	os.logger.WithFields(logrus.Fields{
+		"order_id":     created.ID,
+		"order_number": created.OrderNumber,
+		"total":        created.TotalPrice,
+		"items":        len(items),
+	}).Info("Order created")
+
+	return created, nil
+}
+
+// Get returns an order by ID
+func (os *OrderService) Get(ctx context.Context, id string) (*interfaces.Order, error) {
+	o, err := os.orderStore.GetByID(ctx, id)
+	if err != nil {
+		if errs.IsNoSuchEntityError(err) {
+			return nil, errs.ErrNoSuchEntity
+		}
+		return nil, err
+	}
+	return o, nil
+}
+
+// GetForCustomer returns an order with phone validation (for guest checkout)
+func (os *OrderService) GetForCustomer(ctx context.Context, id, phone string) (*interfaces.Order, error) {
+	if phone == "" {
+		return nil, fmt.Errorf("phone is required to access guest orders")
+	}
+	return os.orderStore.GetByPhone(ctx, id, phone)
+}
+
+// ListByUser returns orders for a given authenticated user
+func (os *OrderService) ListByUser(ctx context.Context, userID string, limit, offset int) (*api.OrdersResponse, error) {
+	orders, total, err := os.orderStore.ListByUserID(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	return &api.OrdersResponse{
+		Orders:     orders,
+		TotalCount: total,
+		HasMore:    int64(offset+limit) < total,
+		Limit:      limit,
+		Offset:     offset,
+	}, nil
+}
+
+// List returns paginated orders (admin)
+func (os *OrderService) List(ctx context.Context, filters *api.ListOrdersFilters) (*api.OrdersResponse, error) {
+	orders, total, err := os.orderStore.List(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+	limit := filters.Limit
+	if limit <= 0 {
+		limit = 50
+	}
+	return &api.OrdersResponse{
+		Orders:     orders,
+		TotalCount: total,
+		HasMore:    int64(filters.Offset+limit) < total,
+		Limit:      limit,
+		Offset:     filters.Offset,
+	}, nil
+}
+
+// UpdateStatus changes order status / payment / tracking
+func (os *OrderService) UpdateStatus(ctx context.Context, id string, req *api.UpdateOrderStatusRequest) (*interfaces.Order, error) {
+	fields := map[string]interface{}{}
+	now := time.Now()
+
+	if req.Status != nil {
+		switch *req.Status {
+		case interfaces.OrderStatusPending,
+			interfaces.OrderStatusConfirmed,
+			interfaces.OrderStatusShipped,
+			interfaces.OrderStatusDelivered,
+			interfaces.OrderStatusCancelled:
+			fields["status"] = *req.Status
+		default:
+			return nil, fmt.Errorf("invalid status: %s", *req.Status)
+		}
+
+		switch *req.Status {
+		case interfaces.OrderStatusShipped:
+			fields["shipped_at"] = now
+		case interfaces.OrderStatusDelivered:
+			fields["delivered_at"] = now
+		case interfaces.OrderStatusCancelled:
+			fields["cancelled_at"] = now
+		}
+	}
+
+	if req.PaymentStatus != nil {
+		switch *req.PaymentStatus {
+		case interfaces.PaymentStatusPending,
+			interfaces.PaymentStatusPaid,
+			interfaces.PaymentStatusRefunded,
+			interfaces.PaymentStatusFailed:
+			fields["payment_status"] = *req.PaymentStatus
+		default:
+			return nil, fmt.Errorf("invalid payment status: %s", *req.PaymentStatus)
+		}
+	}
+
+	if req.TrackingNumber != nil {
+		fields["tracking_number"] = *req.TrackingNumber
+	}
+
+	if len(fields) == 0 {
+		return os.orderStore.GetByID(ctx, id)
+	}
+	return os.orderStore.UpdateStatus(ctx, id, fields)
+}
+
+// generateOrderNumber returns a human-readable order number: AFR-YYYYMMDD-XXXX
+func generateOrderNumber() string {
+	now := time.Now()
+	suffix := rand.Intn(9000) + 1000
+	return strings.ToUpper(fmt.Sprintf("%s-%s-%d", OrderNumberPrefix, now.Format("20060102"), suffix))
+}

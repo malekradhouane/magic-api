@@ -1,6 +1,6 @@
 # storeinit
 
-`storeinit` is a tool to initialize trippy storages.
+`storeinit` is a tool to initialize magic storages.
 
 ## Configuration
 
@@ -12,11 +12,11 @@ Example:
 
 ```
 storages:
-  - name: pg-trippy
+  - name: pg-magic
     enabled: true
     driver: pg
-    dbURI: "postgresql://admin:trippy@localhost:5435/trippydb?sslmode=disable"
-    schemaFolder: "file://testdata/migrations/pg/trippy"
+    dbURI: "postgresql://admin:magic@localhost:5435/magicdb?sslmode=disable"
+    schemaFolder: "file://testdata/migrations/pg/magic"
     forceSchemaVersion: 1
 ```
 
@@ -62,8 +62,8 @@ Create all schemas:
 | # | REPO         | DRIVER     | UPDATED | ERROR |
 +---+--------------+------------+---------+-------+
 | 0 | mongo-users  | mongodb    | Yes     |       |
-| 1 | mongo-trippy | mongodb    | Yes     |       |
-| 2 | pg-trippy    | PostgreSQL | Yes     |       |
+| 1 | mongo-magic | mongodb    | Yes     |       |
+| 2 | pg-magic    | PostgreSQL | Yes     |       |
 +---+--------------+------------+---------+-------+
 ```
 
@@ -76,8 +76,8 @@ Check migration status:
 | # | REPO         | DIRTY | VERSION | ERROR |
 +---+--------------+-------+---------+-------+
 | 0 | mongo-users  |       |       1 |       |
-| 1 | mongo-trippy |       |      24 |       |
-| 2 | pg-trippy    |       |       1 |       |
+| 1 | mongo-magic |       |      24 |       |
+| 2 | pg-magic    |       |       1 |       |
 +---+--------------+-------+---------+-------+
 ```
 
@@ -90,8 +90,8 @@ Check migration status:
 | # | REPO         | DRIVER     | DIRTY | VERSION | ERROR |
 +---+--------------+------------+-------+---------+-------+
 | 0 | mongo-users  | mongodb    |       |       1 |       |
-| 1 | mongo-trippy | mongodb    |   X   |       2 |       |
-| 2 | pg-trippy    | PostgreSQL |       |       1 |       |
+| 1 | mongo-magic | mongodb    |   X   |       2 |       |
+| 2 | pg-magic    | PostgreSQL |       |       1 |       |
 +---+--------------+------------+-------+---------+-------+
 ```
 

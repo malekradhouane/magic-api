@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 
-	"github.com/malekradhouane/trippy/errs"
+	"github.com/malekradhouane/magic/errs"
 )
 
 // NewErrorMessage sets error message to context

@@ -11,7 +11,8 @@ type Identity struct {
 	Email            string `json:"email"`
 	EmailVerified    bool   `json:"emailVerified"`
 	ProfileCompleted bool   `json:"profileCompleted"`
-	Role             string `json:"role"` // user role
+	Role             string `json:"role"`           // user role
+	OrganizationID   string `json:"organizationID"` // org identifier (multi-tenancy)
 }
 
 // Credential holds authentication info

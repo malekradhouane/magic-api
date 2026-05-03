@@ -8,12 +8,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/malekradhouane/trippy/api"
-	"github.com/malekradhouane/trippy/conv"
-	"github.com/malekradhouane/trippy/errs"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
-	"github.com/malekradhouane/trippy/store/types"
-	"github.com/malekradhouane/trippy/utils/encrypt"
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/conv"
+	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/store/types"
+	"github.com/malekradhouane/magic/utils/encrypt"
 )
 
 // UserService user service

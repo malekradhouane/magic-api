@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  trippy-api:
-    image: ghcr.io/trippy-tn/trippy-api:latest
-    container_name: trippy-api
+  magic-api:
+    image: ghcr.io/magic-tn/magic-api:latest
+    container_name: magic-api
     restart: unless-stopped
     ports:
       - "5002:5002"
@@ -11,29 +11,29 @@ services:
       - MODE=dev
       - STORAGES_POSTGRESQL_HOST=postgres
       - STORAGES_POSTGRESQL_PORT=5432
-      - STORAGES_POSTGRESQL_TRIPPYDB=trippydb
-      - STORAGES_POSTGRESQL_TRIPPYLOGIN=admin
-      - STORAGES_POSTGRESQL_TRIPPYPASS=trippy-api
+      - STORAGES_POSTGRESQL_MAGICDB=magicdb
+      - STORAGES_POSTGRESQL_MAGICLOGIN=admin
+      - STORAGES_POSTGRESQL_MAGICPASS=magic-api
     networks:
-      - trippy-network
+      - magic-network
 
   postgres:
     image: postgres:15-alpine
-    container_name: trippy-api-postgres
+    container_name: magic-api-postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=trippydb
+      - POSTGRES_DB=magicdb
       - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=trippy-api
+      - POSTGRES_PASSWORD=magic-api
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5435:5432"
     networks:
-      - trippy-network
+      - magic-network
 
 networks:
-  trippy-network:
+  magic-network:
     driver: bridge
 
 volumes:

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/oidc"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/oidc"
 )
 
 func newTestAppWithSecret(secret string) *application {

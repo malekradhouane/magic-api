@@ -5,8 +5,8 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/malekradhouane/trippy/internal/core"
-	"github.com/malekradhouane/trippy/pkg/assertor"
+	"github.com/malekradhouane/magic/internal/core"
+	"github.com/malekradhouane/magic/pkg/assertor"
 )
 
 type NewCasbinParams struct {

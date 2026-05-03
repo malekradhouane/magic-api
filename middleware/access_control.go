@@ -6,7 +6,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 
-	"github.com/malekradhouane/trippy/pkg/gatekeeper"
+	"github.com/malekradhouane/magic/pkg/gatekeeper"
 )
 
 // DualTokenMiddleware validates Authorization bearer tokens issued either by gin-jwt or an OIDC provider.
@@ -16,7 +16,7 @@ import (
 // 3) Otherwise, fall back to the standard gin-jwt middleware (which may validate cookie-based sessions or return 401).
 func DualTokenMiddleware(ginAuth *jwt.GinJWTMiddleware, verifier *gatekeeper.Verifier, sessionStore gatekeeper.IdentityStore, ginJWT *GinJWT) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if cookie, err := c.Request.Cookie("trippy_session"); err == nil {
+		if cookie, err := c.Request.Cookie("magic_session"); err == nil {
 			if sess, err := sessionStore.Get(c.Request.Context(), cookie.Value); err == nil {
 
 				claims := jwt.MapClaims{

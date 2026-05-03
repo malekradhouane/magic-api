@@ -3,7 +3,7 @@ package casbin
 import (
 	"context"
 
-	"github.com/malekradhouane/trippy/internal/core"
+	"github.com/malekradhouane/magic/internal/core"
 )
 
 type CasbinAuthorization interface {

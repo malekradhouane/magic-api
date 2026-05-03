@@ -3,7 +3,7 @@ package casbin
 import (
 	"context"
 
-	"github.com/malekradhouane/trippy/pkg/assertor"
+	"github.com/malekradhouane/magic/pkg/assertor"
 )
 
 type Authorization struct {

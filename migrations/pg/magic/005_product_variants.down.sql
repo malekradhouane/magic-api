@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS product_colors CASCADE;
+DROP TABLE IF EXISTS product_sizes CASCADE;
+DROP TABLE IF EXISTS product_images CASCADE;

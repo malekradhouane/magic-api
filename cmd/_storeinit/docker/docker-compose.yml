@@ -10,14 +10,14 @@ services:
     environment:
       - POSTGRES_PASSWORD=pgdba
       # - POSTGRES_USER=admin
-      # - POSTGRES_DB=trippy-api
-      - TRIPPY_USER=trippy-api
-      - TRIPPY_PASS=admin
-      - TRIPPY_DB=trippydb
+      # - POSTGRES_DB=magic-api
+      - MAGIC_USER=magic-api
+      - MAGIC_PASS=admin
+      - MAGIC_DB=magicdb
 
 
 networks:
-  trippy-compose-network:
+  magic-compose-network:
     driver: bridge
 
 volumes:

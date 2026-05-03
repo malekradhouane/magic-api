@@ -1,8 +1,8 @@
 package conv
 
 import (
-	"github.com/malekradhouane/trippy/api"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/pkg/interfaces"
 )
 
 // ToStoreUser from signup request to store user

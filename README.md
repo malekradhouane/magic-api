@@ -1,4 +1,4 @@
-# Trippy API
+# Magic API
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ make local        # starts PostgreSQL via Docker Compose
 ### 3. Build and run
 
 ```bash
-make              # builds trippy + storeinit binaries
+make              # builds magic + storeinit binaries
 make run          # loads .env and starts the server
 ```
 
@@ -55,7 +55,7 @@ make test
 ### Regenerate Swagger docs
 
 ```bash
-swag init --dir ./cmd/trippy,. --parseDependency --parseInternal --parseDepth 1 --output docs --outputTypes yaml,go
+swag init --dir ./cmd/magic,. --parseDependency --parseInternal --parseDepth 1 --output docs --outputTypes yaml,go
 ```
 
 ### Adding an OAuth provider
@@ -70,7 +70,7 @@ swag init --dir ./cmd/trippy,. --parseDependency --parseInternal --parseDepth 1 
 docker-compose up -d
 
 # Production image
-docker build -t trippy-api:latest .
-docker run --env-file .env -p 5002:5002 trippy-api:latest
+docker build -t magic-api:latest .
+docker run --env-file .env -p 5002:5002 magic-api:latest
 ```
 

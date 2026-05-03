@@ -16,10 +16,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 
-	"github.com/malekradhouane/trippy/internal/core"
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/casbin"
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/oidc"
-	"github.com/malekradhouane/trippy/utils/httpresp"
+	"github.com/malekradhouane/magic/internal/core"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/casbin"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/oidc"
+	"github.com/malekradhouane/magic/utils/httpresp"
 )
 
 // Constants for error codes and metrics
@@ -125,7 +125,7 @@ func (app *application) Authorize(obj string, act string) gin.HandlerFunc {
 		var roleName string
 		var ok bool
 		// try to get user from session
-		if cookie, err := c.Request.Cookie("trippy_session"); err == nil && cookie.Value != "" {
+		if cookie, err := c.Request.Cookie("magic_session"); err == nil && cookie.Value != "" {
 			sess, err := app.sessionStore.Get(c.Request.Context(), cookie.Value)
 			if err != nil {
 				httpresp.NewErrorMessage(c, http.StatusUnauthorized, "Role not found in claims")
@@ -470,7 +470,7 @@ func (app *application) createSession(
 	}
 
 	cookie := &http.Cookie{
-		Name:     "trippy_session",
+		Name:     "magic_session",
 		Value:    sessionToken,
 		Path:     "/",
 		Domain:   app.cookieConfig.Domain,

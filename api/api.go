@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/malekradhouane/trippy/pkg/interfaces"
+	"github.com/malekradhouane/magic/pkg/interfaces"
 )
 
 // SignUpRequest signup request

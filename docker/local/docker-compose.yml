@@ -5,11 +5,11 @@ services:
     ports:
       - 5435:5432
     environment:
-      - POSTGRES_PASSWORD=trippy-api
+      - POSTGRES_PASSWORD=magic-api
       - POSTGRES_USER=postgres
       # variables used by init script:
-      - TRIPPY_DB=trippydb
-      - TRIPPY_USER=admin
-      - TRIPPY_PASS=trippy-api
+      - MAGIC_DB=magicdb
+      - MAGIC_USER=admin
+      - MAGIC_PASS=magic-api
     volumes:
       - ./postgres-init.sh:/docker-entrypoint-initdb.d/init.sh

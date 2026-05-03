@@ -15,7 +15,7 @@ RUN make
 # STEP 2 -> Create production image.
 FROM alpine:3 AS production
 
-WORKDIR /opt/trippy/trippy-api
+WORKDIR /opt/magic/magic-api
 
 RUN mkdir -p config bin _storeinit migrations
 
@@ -26,7 +26,7 @@ COPY --from=builder \
 
 
 COPY --from=builder \
-    /project/config/trippy.yaml \
+    /project/config/magic.yaml \
     /project/config/rbac_model.conf \
     /project/cmd/_storeinit/config.yaml \
     config/
@@ -37,4 +37,4 @@ COPY --from=builder \
     /migrations
 
 # Run the binary.
-ENTRYPOINT ["bin/trippy"]
+ENTRYPOINT ["bin/magic"]

@@ -11,12 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth/gothic"
 
-	"github.com/malekradhouane/trippy/api"
-	"github.com/malekradhouane/trippy/middleware"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
-	"github.com/malekradhouane/trippy/service"
-	"github.com/malekradhouane/trippy/trippy/configmanager"
-	"github.com/malekradhouane/trippy/utils/httpresp"
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/magic/configmanager"
+	"github.com/malekradhouane/magic/middleware"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/service"
+	"github.com/malekradhouane/magic/utils/httpresp"
 )
 
 type controller struct {
@@ -185,7 +185,7 @@ func (ctrl *controller) createToken(i *interfaces.Identity, expireAt time.Time) 
 	})
 
 	// retrieves secret
-	secret, _ := ctrl.cman.Trippy().Customer["SECRET"].(string)
+	secret, _ := ctrl.cman.Magic().Customer["SECRET"].(string)
 
 	// Sign and get the complete encoded token as a string
 	tokenString, err := token.SignedString([]byte(secret))
@@ -291,7 +291,7 @@ func (ctrl *controller) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	err := ctrl.authService.RequestPasswordReset(c.Request.Context(), req.Email, ctrl.cman.Trippy().BaseURL)
+	err := ctrl.authService.RequestPasswordReset(c.Request.Context(), req.Email, ctrl.cman.Magic().BaseURL)
 	if err != nil {
 		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
 		return

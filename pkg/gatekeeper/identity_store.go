@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/oidc"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/oidc"
 )
 
 // identityStore implements the IdentityStore interface

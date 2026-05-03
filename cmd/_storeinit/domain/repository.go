@@ -2,7 +2,7 @@ package domain
 
 import "context"
 
-// Trippy repository
+// Magic repository
 
 const (
 	ActionMigrateUp    = "up"

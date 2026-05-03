@@ -29,7 +29,7 @@ func (c *Client) Initialise() error {
 	portAsString := fmt.Sprintf("%d", c.ConnParams.Port)
 
 	// Allow overriding SSL mode via environment variable. Defaults to "disable" for local dev.
-	sslmode := os.Getenv("TRIPPY_PG_SSLMODE")
+	sslmode := os.Getenv("MAGIC_PG_SSLMODE")
 	if sslmode == "" {
 		sslmode = "require"
 	}

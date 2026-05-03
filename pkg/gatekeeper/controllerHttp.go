@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/malekradhouane/trippy/pkg/assertor"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
-	"github.com/malekradhouane/trippy/utils/httpresp"
+	"github.com/malekradhouane/magic/pkg/assertor"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/utils/httpresp"
 )
 
 // NewControllerHttpGinParams contains the dependencies to wire the HTTP routes
@@ -54,7 +54,7 @@ func NewControllerHttpGin(params NewControllerHttpGinParams) (*ctrlHttpGin, erro
 // sessionHandler
 func (c *ctrlHttpGin) sessionHandler(ctx *gin.Context) {
 	if c.sessionStore != nil {
-		if cookie, err := ctx.Request.Cookie("trippy_session"); err == nil {
+		if cookie, err := ctx.Request.Cookie("magic_session"); err == nil {
 			if sess, err := c.sessionStore.Get(ctx.Request.Context(), cookie.Value); err == nil {
 				httpresp.NewResult(ctx, http.StatusOK, interfaces.Identity{
 					UserName: sess.UserInfo.Username,

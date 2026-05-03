@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/malekradhouane/trippy/store/postgres"
-	"github.com/malekradhouane/trippy/store/types"
+	"github.com/malekradhouane/magic/store/postgres"
+	"github.com/malekradhouane/magic/store/types"
 )
 
 type Options struct{}
@@ -17,9 +17,14 @@ var (
 
 // StoreSet holds instances of the concrete type implementing the data stores
 type StoreSet struct {
-	User types.UserStore
+	User     types.UserStore
+	Category types.CategoryStore
+	Product  types.ProductStore
+	Order    types.OrderStore
+	Promo    types.PromoStore
 }
 
+// CreatePostgresStores initializes all stores backed by PostgreSQL
 func CreatePostgresStores(opts *Options) error {
 	var err error
 
@@ -27,9 +32,25 @@ func CreatePostgresStores(opts *Options) error {
 		if opts == nil {
 			opts = &Options{}
 		}
-		stores.User, err = postgres.NewUserStore()
-		if err != nil {
-			err = fmt.Errorf("CreateStores : NewUserStore err: %w", err)
+
+		if stores.User, err = postgres.NewUserStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewUserStore err: %w", err)
+			return
+		}
+		if stores.Category, err = postgres.NewCategoryStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewCategoryStore err: %w", err)
+			return
+		}
+		if stores.Product, err = postgres.NewProductStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewProductStore err: %w", err)
+			return
+		}
+		if stores.Order, err = postgres.NewOrderStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewOrderStore err: %w", err)
+			return
+		}
+		if stores.Promo, err = postgres.NewPromoStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewPromoStore err: %w", err)
 			return
 		}
 	})
@@ -37,6 +58,17 @@ func CreatePostgresStores(opts *Options) error {
 	return err
 }
 
-func Users() types.UserStore {
-	return stores.User
-}
+// Users returns the user store
+func Users() types.UserStore { return stores.User }
+
+// Categories returns the category store
+func Categories() types.CategoryStore { return stores.Category }
+
+// Products returns the product store
+func Products() types.ProductStore { return stores.Product }
+
+// Orders returns the order store
+func Orders() types.OrderStore { return stores.Order }
+
+// Promos returns the promo store
+func Promos() types.PromoStore { return stores.Promo }

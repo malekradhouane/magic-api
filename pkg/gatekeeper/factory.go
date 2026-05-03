@@ -11,10 +11,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/malekradhouane/trippy/internal/core"
-	"github.com/malekradhouane/trippy/pkg/assertor"
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/casbin"
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/oidc"
+	"github.com/malekradhouane/magic/internal/core"
+	"github.com/malekradhouane/magic/pkg/assertor"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/casbin"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/oidc"
 )
 
 // NewGateKeeperParams contains all dependencies required to create a new Gatekeeper instance

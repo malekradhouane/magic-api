@@ -1,4 +1,4 @@
-module github.com/malekradhouane/trippy
+module github.com/malekradhouane/magic
 
 go 1.24.0
 

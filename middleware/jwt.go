@@ -7,10 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
-	"github.com/malekradhouane/trippy/pkg/interfaces"
-	"github.com/malekradhouane/trippy/store/types"
-	"github.com/malekradhouane/trippy/trippy/configmanager"
-	"github.com/malekradhouane/trippy/utils/httpresp"
+	"github.com/malekradhouane/magic/magic/configmanager"
+	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/store/types"
+	"github.com/malekradhouane/magic/utils/httpresp"
 )
 
 type GinJWT struct {
@@ -35,7 +35,7 @@ func NewGinJwt(cman configmanager.ManagerContract, userStore types.UserStore) (*
 func (x *GinJWT) MiddlewareHandler() *jwt.GinJWTMiddleware {
 	const defaultTimeout = 15 * time.Hour
 
-	customerConfig := x.cman.Trippy().Customer
+	customerConfig := x.cman.Magic().Customer
 
 	// retrieves secret
 	secret, _ := customerConfig["SECRET"].(string)

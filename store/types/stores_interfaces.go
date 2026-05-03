@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/malekradhouane/trippy/pkg/interfaces"
+	"github.com/malekradhouane/magic/pkg/interfaces"
 )
 
 // Higher level application code should not have to rely on these interfaces,

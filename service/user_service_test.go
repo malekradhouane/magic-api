@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/malekradhouane/trippy/api"
-	"github.com/malekradhouane/trippy/errs"
-	"github.com/malekradhouane/trippy/pkg/interfaces"
+	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/pkg/interfaces"
 )
 
 type MockUserStore struct{ mock.Mock }

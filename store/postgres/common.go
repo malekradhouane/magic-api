@@ -10,7 +10,7 @@ import (
 
 	"github.com/oklog/ulid"
 
-	"github.com/malekradhouane/trippy/utils/logtool"
+	"github.com/malekradhouane/magic/utils/logtool"
 )
 
 var (
@@ -30,7 +30,7 @@ func MustClientInitialized(c *Client) {
 	s := c.Session()
 
 	if s == nil {
-		logger.Error("Postgres client Trippy session not created (nil)")
+		logger.Error("Postgres client Magic session not created (nil)")
 		os.Exit(-1)
 	}
 

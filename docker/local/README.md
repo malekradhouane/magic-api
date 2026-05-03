@@ -5,9 +5,9 @@
 cluster admin:
     - database: postgres
     - login: admin
-    - password: trippy
+    - password: magic
 
-trippy user:
-    - database: trippydb
+magic user:
+    - database: magicdb
     - login: admin
-    - password: trippy
+    - password: magic

@@ -1,9 +1,9 @@
 
 storages:
   # user & database should have been created by container or deployment.
-    - name: pg-trippy-api
+    - name: pg-magic-api
       enabled: true
       driver: pg
       dbURI: ""
-      schemaFolder: "file:///migrations/pg/trippy"
+      schemaFolder: "file:///migrations/pg/magic"
       forceSchemaVersion: 1

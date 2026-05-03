@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 
-	"github.com/malekradhouane/trippy/pkg/gatekeeper/oidc"
+	"github.com/malekradhouane/magic/pkg/gatekeeper/oidc"
 )
 
 type GatekeeperContract interface {
