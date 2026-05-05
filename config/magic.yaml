@@ -42,6 +42,33 @@ httpserver:
 
 base_url: "http://localhost:5002"
 
+# S3-compatible object storage (Cloudflare R2 in prod, MinIO in local dev).
+# All values can be overridden via env vars. Both S3_* and R2_* are accepted.
+#
+#   Local (MinIO, see docker-compose.yml — host ports 9100/9101):
+#     S3_ENDPOINT=http://localhost:9100
+#     S3_BUCKET=magic-products
+#     S3_ACCESS_KEY_ID=minioadmin
+#     S3_SECRET_ACCESS_KEY=minioadmin
+#     S3_PUBLIC_BASE_URL=http://localhost:9100/magic-products
+#     # MinIO web console: http://localhost:9101
+#
+#   Prod (Cloudflare R2):
+#     R2_ACCOUNT_ID=...                   # endpoint auto-derived
+#     R2_BUCKET=magic-products
+#     R2_ACCESS_KEY_ID=...
+#     R2_SECRET_ACCESS_KEY=...
+#     R2_PUBLIC_BASE_URL=https://cdn.example.com
+r2:
+  endpoint: "" # e.g. http://localhost:9000 for MinIO; leave empty to use account_id (R2)
+  region: "auto"
+  account_id: ""
+  bucket: ""
+  access_key_id: ""
+  secret_access_key: ""
+  public_base_url: ""
+  presign_ttl_seconds: 900
+
 logging:
   level: error
   formatter: json # either 'text' or 'json'

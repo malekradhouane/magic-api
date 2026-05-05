@@ -234,6 +234,7 @@ func (ps *ProductStore) List(ctx context.Context, filters *api.ProductFilters) (
 		Preload("Images", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
 		Preload("Sizes", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
 		Preload("Colors", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
+		Preload("Category").
 		Limit(filters.Limit).
 		Offset(filters.Offset).
 		Find(&products).Error

@@ -16,6 +16,26 @@ type Magic struct {
 	Storage    Storage        `koanf:"storages"`
 	Auth       AuthConfig     `yaml:"auth" koanf:"auth"`
 	Email      EmailConfig    `yaml:"email" koanf:"email"`
+	R2         R2Config       `yaml:"r2" koanf:"r2"`
+}
+
+// R2Config holds Cloudflare R2 (S3-compatible) configuration.
+// Secret values (AccessKeyID, SecretAccessKey) MUST come from environment
+// variables, not from the YAML file.
+type R2Config struct {
+	// Endpoint overrides the default R2 endpoint. Use this to point at
+	// MinIO or any other S3-compatible service (e.g. "http://localhost:9000").
+	Endpoint        string `yaml:"endpoint" koanf:"endpoint"`
+	Region          string `yaml:"region" koanf:"region"`
+	AccountID       string `yaml:"account_id" koanf:"account_id"`
+	Bucket          string `yaml:"bucket" koanf:"bucket"`
+	AccessKeyID     string `yaml:"access_key_id" koanf:"access_key_id"`
+	SecretAccessKey string `yaml:"secret_access_key" koanf:"secret_access_key"`
+	// PublicBaseURL is the public-facing URL where uploaded objects are served
+	// (e.g. "https://cdn.example.com" or "https://pub-xxx.r2.dev").
+	PublicBaseURL string `yaml:"public_base_url" koanf:"public_base_url"`
+	// PresignTTLSeconds controls how long the upload URL stays valid.
+	PresignTTLSeconds int `yaml:"presign_ttl_seconds" koanf:"presign_ttl_seconds"`
 }
 
 type OIDCConfig struct {

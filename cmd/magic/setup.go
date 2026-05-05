@@ -23,6 +23,7 @@ import (
 	"github.com/malekradhouane/magic/pkg/gatekeeper"
 	"github.com/malekradhouane/magic/pkg/gatekeeper/oidc"
 	"github.com/malekradhouane/magic/pkg/mailer"
+	"github.com/malekradhouane/magic/pkg/storage/r2"
 	"github.com/malekradhouane/magic/store"
 	"github.com/malekradhouane/magic/store/postgres"
 	"github.com/malekradhouane/magic/store/types"
@@ -54,6 +55,7 @@ type (
 
 		stores struct {
 			postgresClient *postgres.Client
+			r2Client       *r2.Client
 		}
 		services    struct{}
 		controllers struct{}
@@ -79,6 +81,7 @@ func (rr *ResourcesRegistry) Setup() error {
 		{rr.setupLogger, "logger"},
 		{rr.setupStartup, "startup"},
 		{rr.setupStoragePostgreSQL, "storage using PostgreSQL"},
+		{rr.setupStorageR2, "storage using Cloudflare R2"},
 		{rr.setupRepository, "repositories"},
 		{rr.setupMailer, "mailer"},
 		{rr.setupGinRouter, "gin router"},
@@ -362,6 +365,63 @@ func (rr *ResourcesRegistry) setupStoragePostgreSQL() error {
 	return nil
 }
 
+func (rr *ResourcesRegistry) setupStorageR2() error {
+	cfg := rr.cman.Magic().R2
+
+	// Allow env vars to override / supply secrets without storing them in YAML.
+	// Generic S3 vars are accepted as well so the same config works for MinIO.
+	if v := firstEnv("S3_ENDPOINT", "R2_ENDPOINT"); v != "" {
+		cfg.Endpoint = v
+	}
+	if v := firstEnv("S3_REGION", "R2_REGION"); v != "" {
+		cfg.Region = v
+	}
+	if v := os.Getenv("R2_ACCOUNT_ID"); v != "" {
+		cfg.AccountID = v
+	}
+	if v := firstEnv("S3_BUCKET", "R2_BUCKET"); v != "" {
+		cfg.Bucket = v
+	}
+	if v := firstEnv("S3_ACCESS_KEY_ID", "R2_ACCESS_KEY_ID"); v != "" {
+		cfg.AccessKeyID = v
+	}
+	if v := firstEnv("S3_SECRET_ACCESS_KEY", "R2_SECRET_ACCESS_KEY"); v != "" {
+		cfg.SecretAccessKey = v
+	}
+	if v := firstEnv("S3_PUBLIC_BASE_URL", "R2_PUBLIC_BASE_URL"); v != "" {
+		cfg.PublicBaseURL = v
+	}
+
+	// Object storage is optional: if any required value is missing, skip and warn.
+	hasEndpoint := cfg.Endpoint != "" || cfg.AccountID != ""
+	if !hasEndpoint || cfg.Bucket == "" || cfg.AccessKeyID == "" || cfg.SecretAccessKey == "" {
+		rr.logger.Warn("object storage (R2/MinIO) is not configured: presigned upload URLs will be disabled")
+		return nil
+	}
+
+	ttl := time.Duration(cfg.PresignTTLSeconds) * time.Second
+	if ttl <= 0 {
+		ttl = 15 * time.Minute
+	}
+
+	client, err := r2.New(context.Background(), r2.Config{
+		Endpoint:        cfg.Endpoint,
+		Region:          cfg.Region,
+		AccountID:       cfg.AccountID,
+		Bucket:          cfg.Bucket,
+		AccessKeyID:     cfg.AccessKeyID,
+		SecretAccessKey: cfg.SecretAccessKey,
+		PublicBaseURL:   cfg.PublicBaseURL,
+		PresignTTL:      ttl,
+	})
+	if err != nil {
+		return fmt.Errorf("setupStorageR2: %w", err)
+	}
+
+	rr.stores.r2Client = client
+	return nil
+}
+
 func (rr *ResourcesRegistry) setupEarlyService() error {
 	return nil
 }
@@ -484,6 +544,16 @@ func (rr *ResourcesRegistry) setupGatekeeper() error {
 	}
 
 	return nil
+}
+
+// firstEnv returns the value of the first non-empty env var in the list.
+func firstEnv(names ...string) string {
+	for _, n := range names {
+		if v := os.Getenv(n); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 type ctxCloser struct {

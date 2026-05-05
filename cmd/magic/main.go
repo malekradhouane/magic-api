@@ -131,6 +131,11 @@ func main() {
 	promoHandler := handler.NewPromoHandler(promoService, authMiddleware.MiddlewareFunc())
 	promoHandler.SetupRoutes(api)
 
+	// Uploads (presigned URLs to Cloudflare R2). r2Client may be nil if R2
+	// is not configured; the handler will then return 503 to clients.
+	uploadHandler := handler.NewUploadHandler(rr.stores.r2Client, authMiddleware.MiddlewareFunc())
+	uploadHandler.SetupRoutes(api)
+
 	// Serve swagger documentation
 	r.GET("/swagger/*any", setDocumentationInfo, ginSwagger.WrapHandler(swaggerFiles.Handler))
 
