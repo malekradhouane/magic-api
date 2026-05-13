@@ -39,5 +39,5 @@ func hyphenate(input string) string {
 	re2 := regexp.MustCompilePOSIX(`-+`)
 	result = re2.ReplaceAllString(result, "-")
 
-	return strings.TrimSuffix(result, "-")
+	return strings.Trim(result, "-")
 }

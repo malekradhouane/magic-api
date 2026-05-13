@@ -11,3 +11,4 @@ config/config.yaml
 
 /docs
 /bin
+.DS_Store

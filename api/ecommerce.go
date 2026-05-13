@@ -35,7 +35,6 @@ type ProductsResponse struct {
 
 // CreateProductRequest is used by admins to create a product
 type CreateProductRequest struct {
-	Slug            string                      `json:"slug" valid:"required"`
 	Name            string                      `json:"name" valid:"required"`
 	SKU             *string                     `json:"sku,omitempty"`
 	Description     string                      `json:"description"`
@@ -96,7 +95,6 @@ type UpdateProductRequest struct {
 
 // CreateCategoryRequest is used by admins to create a category
 type CreateCategoryRequest struct {
-	Slug        string  `json:"slug" valid:"required"`
 	Name        string  `json:"name" valid:"required"`
 	Description string  `json:"description"`
 	ImageURL    string  `json:"image_url"`

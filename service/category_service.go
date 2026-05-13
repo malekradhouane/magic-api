@@ -11,6 +11,7 @@ import (
 	"github.com/malekradhouane/magic/errs"
 	"github.com/malekradhouane/magic/pkg/interfaces"
 	"github.com/malekradhouane/magic/store/types"
+	"github.com/malekradhouane/magic/utils/text"
 )
 
 // CategoryService handles category business logic
@@ -30,7 +31,7 @@ func NewCategoryService(store types.CategoryStore, logger *logrus.Logger) *Categ
 // Create creates a category
 func (cs *CategoryService) Create(ctx context.Context, req *api.CreateCategoryRequest) (*interfaces.Category, error) {
 	cat := &interfaces.Category{
-		Slug:        req.Slug,
+		Slug:        text.Slugify(req.Name),
 		Name:        req.Name,
 		Description: req.Description,
 		ImageURL:    req.ImageURL,
@@ -87,6 +88,7 @@ func (cs *CategoryService) Update(ctx context.Context, id string, req *api.Updat
 	fields := map[string]interface{}{}
 	if req.Name != nil {
 		fields["name"] = *req.Name
+		fields["slug"] = text.Slugify(*req.Name)
 	}
 	if req.Description != nil {
 		fields["description"] = *req.Description

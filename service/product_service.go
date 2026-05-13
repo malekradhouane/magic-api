@@ -11,6 +11,7 @@ import (
 	"github.com/malekradhouane/magic/errs"
 	"github.com/malekradhouane/magic/pkg/interfaces"
 	"github.com/malekradhouane/magic/store/types"
+	"github.com/malekradhouane/magic/utils/text"
 )
 
 // ProductService handles product business logic
@@ -30,7 +31,7 @@ func NewProductService(store types.ProductStore, logger *logrus.Logger) *Product
 // Create persists a product with its variants
 func (ps *ProductService) Create(ctx context.Context, req *api.CreateProductRequest) (*interfaces.Product, error) {
 	product := &interfaces.Product{
-		Slug:            req.Slug,
+		Slug:            text.Slugify(req.Name),
 		Name:            req.Name,
 		SKU:             req.SKU,
 		Description:     req.Description,
@@ -150,6 +151,7 @@ func (ps *ProductService) Update(ctx context.Context, id string, req *api.Update
 	fields := map[string]interface{}{}
 	if req.Name != nil {
 		fields["name"] = *req.Name
+		fields["slug"] = text.Slugify(*req.Name)
 	}
 	if req.Description != nil {
 		fields["description"] = *req.Description
