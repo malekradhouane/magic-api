@@ -170,11 +170,22 @@ func (os *OrderStore) List(ctx context.Context, filters *api.ListOrdersFilters) 
 	if filters.PaymentStatus != "" {
 		db = db.Where("payment_status = ?", filters.PaymentStatus)
 	}
+	if filters.PaymentMethod != "" {
+		db = db.Where("payment_method = ?", filters.PaymentMethod)
+	}
 	if filters.UserID != "" {
 		db = db.Where("user_id = ?", filters.UserID)
 	}
 	if filters.Phone != "" {
-		db = db.Where("shipping_info->>'phone' = ?", filters.Phone)
+		like := "%" + filters.Phone + "%"
+		db = db.Where("shipping_info->>'phone' ILIKE ?", like)
+	}
+	if filters.Search != "" {
+		like := "%" + filters.Search + "%"
+		db = db.Where(
+			"order_number ILIKE ? OR shipping_info->>'firstName' ILIKE ? OR shipping_info->>'lastName' ILIKE ? OR shipping_info->>'phone' ILIKE ?",
+			like, like, like, like,
+		)
 	}
 
 	var totalCount int64

@@ -163,7 +163,7 @@ func (ps *ProductStore) List(ctx context.Context, filters *api.ProductFilters) (
 	}
 
 	db := ps.session.GetDB().WithContext(ctx).Model(&interfaces.Product{}).
-		Where("is_active = ? AND deleted_at IS NULL", true)
+		Where("products.is_active = ? AND products.deleted_at IS NULL", true)
 
 	// Category filter (by slug)
 	if filters.Category != "" && filters.Category != "all" {

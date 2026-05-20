@@ -150,12 +150,14 @@ type UpdateOrderStatusRequest struct {
 
 // ListOrdersFilters for admin order listing
 type ListOrdersFilters struct {
-	Status        string `form:"status"`
-	PaymentStatus string `form:"payment_status"`
-	UserID        string `form:"user_id"`
-	Phone         string `form:"phone"`
-	Limit         int    `form:"limit,default=50"`
-	Offset        int    `form:"offset,default=0"`
+	Status         string `form:"status"`
+	PaymentStatus  string `form:"payment_status"`
+	PaymentMethod  string `form:"payment_method"`
+	UserID         string `form:"user_id"`
+	Phone          string `form:"phone"`
+	Search         string `form:"search"`
+	Limit          int    `form:"limit,default=50"`
+	Offset         int    `form:"offset,default=0"`
 }
 
 // OrdersResponse paginated orders response

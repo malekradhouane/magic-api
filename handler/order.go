@@ -39,6 +39,7 @@ func NewOrderHandler(s *service.OrderService, auth gin.HandlerFunc) *OrderHandle
 // Admin:
 //
 //	GET  /admin/orders
+//	GET  /admin/orders/:id
 //	PATCH /admin/orders/:id
 func (h *OrderHandler) SetupRoutes(g *gin.RouterGroup) {
 	// Public (guest-friendly)
@@ -54,6 +55,7 @@ func (h *OrderHandler) SetupRoutes(g *gin.RouterGroup) {
 	admin := g.Group("/admin/orders")
 	admin.Use(h.auth)
 	admin.GET("", h.AdminList)
+	admin.GET("/:id", h.AdminGet)
 	admin.PATCH("/:id", h.UpdateStatus)
 }
 
@@ -193,6 +195,20 @@ func (h *OrderHandler) AdminList(c *gin.Context) {
 		return
 	}
 	httpresp.NewResult(c, http.StatusOK, resp)
+}
+
+func (h *OrderHandler) AdminGet(c *gin.Context) {
+	id := c.Param("id")
+	order, err := h.service.Get(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, errs.ErrNoSuchEntity) {
+			httpresp.NewErrorMessage(c, http.StatusNotFound, "order not found")
+			return
+		}
+		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	httpresp.NewResult(c, http.StatusOK, order)
 }
 
 // UpdateStatus updates an order status (admin)
