@@ -51,12 +51,13 @@ func (h *OrderHandler) SetupRoutes(g *gin.RouterGroup) {
 	authed.Use(h.auth)
 	authed.GET("/me/orders", h.ListMyOrders)
 
-	// Admin
-	admin := g.Group("/admin/orders")
-	admin.Use(h.auth)
-	admin.GET("", h.AdminList)
-	admin.GET("/:id", h.AdminGet)
-	admin.PATCH("/:id", h.UpdateStatus)
+	// Admin — routes en chemins complets sous /api (évite les cas où Gin
+	// ne matche pas correctement un sous-groupe /admin/orders avec GET "" + "/:id").
+	adminAuthed := g.Group("")
+	adminAuthed.Use(h.auth)
+	adminAuthed.GET("/admin/orders", h.AdminList)
+	adminAuthed.GET("/admin/orders/:id", h.AdminGet)
+	adminAuthed.PATCH("/admin/orders/:id", h.UpdateStatus)
 }
 
 // Create creates a new order (guest or auth)
@@ -199,7 +200,7 @@ func (h *OrderHandler) AdminList(c *gin.Context) {
 
 func (h *OrderHandler) AdminGet(c *gin.Context) {
 	id := c.Param("id")
-	order, err := h.service.Get(c.Request.Context(), id)
+	order, err := h.service.GetForAdmin(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, errs.ErrNoSuchEntity) {
 			httpresp.NewErrorMessage(c, http.StatusNotFound, "order not found")

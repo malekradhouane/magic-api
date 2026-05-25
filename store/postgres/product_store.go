@@ -374,6 +374,9 @@ func (ps *ProductStore) UpsertColors(ctx context.Context, productID string, colo
 
 // DecrementSizeStock atomically decrements stock for a given (product, size)
 func (ps *ProductStore) DecrementSizeStock(ctx context.Context, productID, size string, quantity int) error {
+	if quantity <= 0 {
+		return fmt.Errorf("invalid quantity: %d", quantity)
+	}
 	res := ps.session.GetDB().WithContext(ctx).
 		Model(&interfaces.ProductSize{}).
 		Where("product_id = ? AND size = ? AND stock >= ?", productID, size, quantity).
@@ -383,6 +386,24 @@ func (ps *ProductStore) DecrementSizeStock(ctx context.Context, productID, size 
 	}
 	if res.RowsAffected == 0 {
 		return fmt.Errorf("insufficient stock for product %s size %s", productID, size)
+	}
+	return nil
+}
+
+// IncrementSizeStock restores stock for a given (product, size) — e.g. order cancellation
+func (ps *ProductStore) IncrementSizeStock(ctx context.Context, productID, size string, quantity int) error {
+	if quantity <= 0 {
+		return fmt.Errorf("invalid quantity: %d", quantity)
+	}
+	res := ps.session.GetDB().WithContext(ctx).
+		Model(&interfaces.ProductSize{}).
+		Where("product_id = ? AND size = ?", productID, size).
+		Update("stock", gorm.Expr("stock + ?", quantity))
+	if res.Error != nil {
+		return fmt.Errorf("failed to increment size stock: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("size variant not found for product %s size %s", productID, size)
 	}
 	return nil
 }

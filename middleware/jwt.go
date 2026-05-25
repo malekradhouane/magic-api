@@ -131,7 +131,7 @@ func (x *GinJWT) MiddlewareHandler() *jwt.GinJWTMiddleware {
 		// - "query:<name>"
 		// - "cookie:<name>"
 		// - "param:<name>"
-		TokenLookup: "header: Authorization",
+		TokenLookup: "header:Authorization",
 		// TokenLookup: "query:token",
 		// TokenLookup: "cookie:token",
 

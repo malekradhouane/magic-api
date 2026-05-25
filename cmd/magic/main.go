@@ -105,7 +105,19 @@ func main() {
 	categoryService := service.NewCategoryService(store.Categories(), rr.logger)
 	productService := service.NewProductService(store.Products(), rr.logger)
 	promoService := service.NewPromoService(store.Promos(), rr.logger)
-	orderService := service.NewOrderService(store.Orders(), store.Products(), promoService, rr.logger)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	orderService := service.NewOrderService(
+		store.Orders(),
+		store.Products(),
+		promoService,
+		store.Users(),
+		rr.mailer,
+		frontendURL,
+		rr.logger,
+	)
 
 	// Sets up auth routes
 	authCtrl, err := handler.NewController(rr.cman, authMiddleware, ginJWT, authService)

@@ -46,6 +46,7 @@ func (h *ProductHandler) SetupRoutes(g *gin.RouterGroup) {
 	admin := g.Group("/products")
 	admin.Use(h.auth)
 	admin.POST("", h.Create)
+	admin.GET("/id/:id", h.GetByIDAdmin)
 	admin.PATCH("/:id", h.Update)
 	admin.DELETE("/:id", h.Delete)
 }
@@ -134,6 +135,28 @@ func (h *ProductHandler) GetSimilar(c *gin.Context) {
 	httpresp.NewResult(c, http.StatusOK, similar)
 }
 
+// GetByIDAdmin returns a product by UUID (admin, no view-count bump)
+// @Summary Get product by ID (admin)
+// @Tags products
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Product ID (UUID)"
+// @Success 200 {object} interfaces.Product
+// @Router /products/id/{id} [get]
+func (h *ProductHandler) GetByIDAdmin(c *gin.Context) {
+	id := c.Param("id")
+	product, err := h.service.GetByIDAdmin(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, errs.ErrNoSuchEntity) {
+			httpresp.NewErrorMessage(c, http.StatusNotFound, "product not found")
+			return
+		}
+		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	httpresp.NewResult(c, http.StatusOK, product)
+}
+
 // Create creates a product (admin)
 // @Summary Create product
 // @Tags products
@@ -176,6 +199,10 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 	var req api.UpdateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if _, err := govalidator.ValidateStruct(&req); err != nil {
 		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
 		return
 	}

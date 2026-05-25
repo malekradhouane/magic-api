@@ -13,6 +13,7 @@ import (
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/errs"
 	"github.com/malekradhouane/magic/pkg/interfaces"
+	"github.com/malekradhouane/magic/pkg/mailer"
 	"github.com/malekradhouane/magic/store/types"
 )
 
@@ -30,6 +31,9 @@ type OrderService struct {
 	orderStore   types.OrderStore
 	productStore types.ProductStore
 	promoService *PromoService
+	userStore    types.UserStore
+	mailer       mailer.Mailer
+	frontendURL  string
 	logger       *logrus.Logger
 }
 
@@ -38,6 +42,9 @@ func NewOrderService(
 	orderStore types.OrderStore,
 	productStore types.ProductStore,
 	promoService *PromoService,
+	userStore types.UserStore,
+	m mailer.Mailer,
+	frontendURL string,
 	logger *logrus.Logger,
 ) *OrderService {
 	if logger == nil {
@@ -47,6 +54,9 @@ func NewOrderService(
 		orderStore:   orderStore,
 		productStore: productStore,
 		promoService: promoService,
+		userStore:    userStore,
+		mailer:       m,
+		frontendURL:  frontendURL,
 		logger:       logger,
 	}
 }
@@ -180,24 +190,23 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		}
 	}
 
-	// 5. Persist
+	// 5. Reserve stock (commande en attente = stock bloqué)
+	for _, item := range items {
+		if item.ProductID == nil || item.Size == "" {
+			return nil, fmt.Errorf("taille requise pour réserver le stock du produit %s", item.ProductName)
+		}
+	}
+	if err := os.reserveStockForItems(ctx, items); err != nil {
+		return nil, err
+	}
+	order.Metadata = interfaces.JSONMap{orderMetaStockReserved: true}
+
+	// 6. Persist
 	created, err := os.orderStore.Create(ctx, order, items)
 	if err != nil {
 		os.logger.WithError(err).Error("Failed to persist order")
+		_ = os.releaseStockForItems(ctx, items)
 		return nil, err
-	}
-
-	// 6. Best-effort: decrement stock & track promo usage (non-blocking failures logged)
-	for _, item := range items {
-		if item.ProductID != nil && item.Size != "" {
-			if err := os.productStore.DecrementSizeStock(ctx, item.ProductID.String(), item.Size, item.Quantity); err != nil {
-				os.logger.WithError(err).
-					WithFields(logrus.Fields{
-						"product_id": item.ProductID.String(),
-						"size":       item.Size,
-					}).Warn("Failed to decrement stock")
-			}
-		}
 	}
 
 	if appliedPromo != nil {
@@ -213,12 +222,33 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		"items":        len(items),
 	}).Info("Order created")
 
+	os.sendOrderConfirmationEmail(ctx, created)
+
 	return created, nil
 }
 
 // Get returns an order by ID
 func (os *OrderService) Get(ctx context.Context, id string) (*interfaces.Order, error) {
 	o, err := os.orderStore.GetByID(ctx, id)
+	if err != nil {
+		if errs.IsNoSuchEntityError(err) {
+			return nil, errs.ErrNoSuchEntity
+		}
+		return nil, err
+	}
+	return o, nil
+}
+
+// GetForAdmin returns an order by UUID or by human-readable order_number (admin).
+func (os *OrderService) GetForAdmin(ctx context.Context, idOrNumber string) (*interfaces.Order, error) {
+	key := strings.TrimSpace(idOrNumber)
+	if key == "" {
+		return nil, errs.ErrNoSuchEntity
+	}
+	if _, err := uuid.Parse(key); err == nil {
+		return os.Get(ctx, key)
+	}
+	o, err := os.orderStore.GetByOrderNumber(ctx, key)
 	if err != nil {
 		if errs.IsNoSuchEntityError(err) {
 			return nil, errs.ErrNoSuchEntity
@@ -275,8 +305,17 @@ func (os *OrderService) List(ctx context.Context, filters *api.ListOrdersFilters
 
 // UpdateStatus changes order status / payment / tracking
 func (os *OrderService) UpdateStatus(ctx context.Context, id string, req *api.UpdateOrderStatusRequest) (*interfaces.Order, error) {
+	previous, err := os.orderStore.GetByID(ctx, id)
+	if err != nil {
+		if errs.IsNoSuchEntityError(err) {
+			return nil, errs.ErrNoSuchEntity
+		}
+		return nil, err
+	}
+
 	fields := map[string]interface{}{}
 	now := time.Now()
+	notifyShipped := false
 
 	if req.Status != nil {
 		switch *req.Status {
@@ -288,6 +327,10 @@ func (os *OrderService) UpdateStatus(ctx context.Context, id string, req *api.Up
 			fields["status"] = *req.Status
 		default:
 			return nil, fmt.Errorf("invalid status: %s", *req.Status)
+		}
+
+		if *req.Status == interfaces.OrderStatusShipped && previous.Status != interfaces.OrderStatusShipped {
+			notifyShipped = true
 		}
 
 		switch *req.Status {
@@ -316,10 +359,96 @@ func (os *OrderService) UpdateStatus(ctx context.Context, id string, req *api.Up
 		fields["tracking_number"] = *req.TrackingNumber
 	}
 
-	if len(fields) == 0 {
-		return os.orderStore.GetByID(ctx, id)
+	// Annulation admin : remettre le stock réservé
+	if req.Status != nil &&
+		*req.Status == interfaces.OrderStatusCancelled &&
+		previous.Status != interfaces.OrderStatusCancelled {
+		if orderStockWasReserved(previous) && !orderStockWasReleased(previous) {
+			if err := os.releaseStockForItems(ctx, previous.Items); err != nil {
+				return nil, fmt.Errorf("impossible de remettre le stock en inventaire: %w", err)
+			}
+			fields["metadata"] = orderMetadataMarkReleased(previous.Metadata)
+		}
 	}
-	return os.orderStore.UpdateStatus(ctx, id, fields)
+
+	if len(fields) == 0 {
+		return previous, nil
+	}
+
+	updated, err := os.orderStore.UpdateStatus(ctx, id, fields)
+	if err != nil {
+		return nil, err
+	}
+
+	if notifyShipped {
+		os.sendOrderShippedEmail(ctx, updated)
+	}
+
+	return updated, nil
+}
+
+const (
+	orderMetaStockReserved = "stock_reserved"
+	orderMetaStockReleased = "stock_released"
+)
+
+func orderStockWasReserved(o *interfaces.Order) bool {
+	return o.Metadata.Bool(orderMetaStockReserved)
+}
+
+func orderStockWasReleased(o *interfaces.Order) bool {
+	return o.Metadata.Bool(orderMetaStockReleased)
+}
+
+func orderMetadataMarkReleased(meta interfaces.JSONMap) interfaces.JSONMap {
+	m := meta.Clone()
+	m[orderMetaStockReleased] = true
+	return m
+}
+
+func (os *OrderService) reserveStockForItems(ctx context.Context, items []interfaces.OrderItem) error {
+	reserved := make([]interfaces.OrderItem, 0, len(items))
+	for _, item := range items {
+		if item.ProductID == nil || item.Size == "" {
+			continue
+		}
+		if err := os.productStore.DecrementSizeStock(
+			ctx,
+			item.ProductID.String(),
+			item.Size,
+			item.Quantity,
+		); err != nil {
+			_ = os.releaseStockForItems(ctx, reserved)
+			return err
+		}
+		reserved = append(reserved, item)
+	}
+	return nil
+}
+
+func (os *OrderService) releaseStockForItems(ctx context.Context, items []interfaces.OrderItem) error {
+	var firstErr error
+	for _, item := range items {
+		if item.ProductID == nil || item.Size == "" {
+			continue
+		}
+		if err := os.productStore.IncrementSizeStock(
+			ctx,
+			item.ProductID.String(),
+			item.Size,
+			item.Quantity,
+		); err != nil {
+			os.logger.WithError(err).WithFields(logrus.Fields{
+				"product_id": item.ProductID.String(),
+				"size":       item.Size,
+				"quantity":   item.Quantity,
+			}).Error("Failed to restore stock on order cancellation")
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+	return firstErr
 }
 
 // generateOrderNumber returns a human-readable order number: AFR-YYYYMMDD-XXXX

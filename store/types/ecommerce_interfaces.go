@@ -23,6 +23,7 @@ type ProductStore interface {
 	UpsertSizes(ctx context.Context, productID string, sizes []interfaces.ProductSize) error
 	UpsertColors(ctx context.Context, productID string, colors []interfaces.ProductColor) error
 	DecrementSizeStock(ctx context.Context, productID, size string, quantity int) error
+	IncrementSizeStock(ctx context.Context, productID, size string, quantity int) error
 }
 
 // CategoryStore manages category persistence

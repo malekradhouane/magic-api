@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Commande expédiée - Magic</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+        .container { max-width: 500px; margin: 30px auto; background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+        .logo { text-align: center; margin-bottom: 24px; }
+        .logo img { width: 180px; height: auto; }
+        h1 { color: #333333; font-size: 22px; margin: 0 0 16px; text-align: center; }
+        p { color: #666666; font-size: 15px; line-height: 1.5; margin: 0 0 16px; text-align: center; }
+        .highlight { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; margin: 20px 0; text-align: center; }
+        .highlight strong { color: #166534; font-size: 16px; }
+        .tracking { font-family: monospace; font-size: 15px; color: #333; margin-top: 8px; }
+        .button { display: block; max-width: 280px; margin: 24px auto; padding: 12px 20px; background-color: #4B5563; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 15px; text-align: center; }
+        .footer { text-align: center; font-size: 12px; color: #999999; margin-top: 24px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">
+        <img alt="Magic" src="https://10ym9.mjt.lu/img2/10ym9/dc35bca0-7c81-4a5f-8762-866c27e12d0a/content">
+    </div>
+    <h1>Votre commande est en route !</h1>
+    <p>Bonjour {{.CustomerName}},</p>
+    <p>Bonne nouvelle : votre commande <strong>{{.OrderNumber}}</strong> a été expédiée.</p>
+
+    <div class="highlight">
+        <strong>Commande expédiée</strong>
+        {{if .HasTracking}}
+        <p style="margin:12px 0 0;font-size:14px;color:#555;">Numéro de suivi :</p>
+        <p class="tracking">{{.TrackingNumber}}</p>
+        {{end}}
+    </div>
+
+    <p>Vous pouvez consulter le détail de votre commande en cliquant ci-dessous.</p>
+
+    <a class="button" href="{{.OrderURL}}">Voir ma commande</a>
+
+    <div class="footer">
+        <p>© Magic. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>

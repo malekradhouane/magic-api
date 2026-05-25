@@ -25,6 +25,14 @@ GCFLAGS =
 .PHONY: all
 all: magic storeinit
 
+.PHONY: build
+build: magic
+	@echo "Build OK → $(MAGIC_BIN)"
+
+.PHONY: build-all
+build-all: all
+	@echo "Build OK → $(BINDIR)/"
+
 .PHONY: storeinit
 storeinit:
 	@echo "Building $@"

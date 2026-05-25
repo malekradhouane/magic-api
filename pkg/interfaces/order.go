@@ -97,7 +97,7 @@ type Order struct {
 
 	CustomerNotes string `gorm:"type:text" json:"customer_notes,omitempty"`
 
-	Metadata *map[string]interface{} `gorm:"type:jsonb" json:"metadata,omitempty"`
+	Metadata JSONMap `gorm:"type:jsonb;default:'{}'" json:"metadata,omitempty"`
 
 	Items []OrderItem `gorm:"foreignKey:OrderID" json:"items,omitempty"`
 }

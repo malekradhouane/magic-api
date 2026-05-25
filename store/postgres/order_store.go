@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -78,12 +79,17 @@ func (os *OrderStore) Create(ctx context.Context, order *interfaces.Order, items
 	return os.GetByID(ctx, order.ID.String())
 }
 
-// GetByID returns an order with items preloaded
+// GetByID returns an order with items preloaded (id must be a valid UUID string).
 func (os *OrderStore) GetByID(ctx context.Context, id string) (*interfaces.Order, error) {
+	id = strings.TrimSpace(id)
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, errs.ErrNoSuchEntity
+	}
 	o := new(interfaces.Order)
-	err := os.session.GetDB().WithContext(ctx).
+	err = os.session.GetDB().WithContext(ctx).
 		Preload("Items").
-		Where("id = ?", id).
+		Where("id = ?", uid).
 		Take(o).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -74,19 +74,25 @@ type CreateProductColorRequest struct {
 	Position int    `json:"position"`
 }
 
-// UpdateProductRequest is used by admins to update product fields
+// UpdateProductRequest is the full admin form payload (magic-admin always sends all fields).
 type UpdateProductRequest struct {
-	Name            *string  `json:"name,omitempty"`
-	Description     *string  `json:"description,omitempty"`
-	DescriptionLong *string  `json:"description_long,omitempty"`
-	Price           *float64 `json:"price,omitempty"`
-	OriginalPrice   *float64 `json:"original_price,omitempty"`
-	CategoryID      *string  `json:"category_id,omitempty"`
-	IsNew           *bool    `json:"is_new,omitempty"`
-	IsOnSale        *bool    `json:"is_on_sale,omitempty"`
-	IsActive        *bool    `json:"is_active,omitempty"`
-	IsFeatured      *bool    `json:"is_featured,omitempty"`
-	Tags            []string `json:"tags,omitempty"`
+	Name            string                      `json:"name" valid:"required"`
+	SKU             string                      `json:"sku"`
+	Description     string                      `json:"description"`
+	DescriptionLong string                      `json:"description_long"`
+	Price           float64                     `json:"price"`
+	OriginalPrice   *float64                    `json:"original_price"`
+	CategoryID      string                      `json:"category_id"`
+	IsNew           bool                        `json:"is_new"`
+	IsOnSale        bool                        `json:"is_on_sale"`
+	IsActive        bool                        `json:"is_active"`
+	IsFeatured      bool                        `json:"is_featured"`
+	Tags            []string                    `json:"tags"`
+	MetaTitle       string                      `json:"meta_title"`
+	MetaDescription string                      `json:"meta_description"`
+	Images          []CreateProductImageRequest `json:"images"`
+	Sizes           []CreateProductSizeRequest  `json:"sizes"`
+	Colors          []CreateProductColorRequest `json:"colors"`
 }
 
 // ============================================================================

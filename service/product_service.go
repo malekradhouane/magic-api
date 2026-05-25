@@ -146,56 +146,97 @@ func (ps *ProductService) GetSimilar(ctx context.Context, productID string, limi
 	return ps.store.GetSimilar(ctx, productID, limit)
 }
 
-// Update applies field updates to a product
-func (ps *ProductService) Update(ctx context.Context, id string, req *api.UpdateProductRequest) (*interfaces.Product, error) {
-	fields := map[string]interface{}{}
-	if req.Name != nil {
-		fields["name"] = *req.Name
-		fields["slug"] = text.Slugify(*req.Name)
-	}
-	if req.Description != nil {
-		fields["description"] = *req.Description
-	}
-	if req.DescriptionLong != nil {
-		fields["description_long"] = *req.DescriptionLong
-	}
-	if req.Price != nil {
-		fields["price"] = *req.Price
-	}
-	if req.OriginalPrice != nil {
-		fields["original_price"] = *req.OriginalPrice
-	}
-	if req.CategoryID != nil {
-		if *req.CategoryID == "" {
-			fields["category_id"] = nil
-		} else {
-			cid, err := uuid.Parse(*req.CategoryID)
-			if err != nil {
-				return nil, fmt.Errorf("invalid category_id: %w", err)
-			}
-			fields["category_id"] = cid
+// GetByIDAdmin loads a product by UUID for the admin panel (does not increment views).
+func (ps *ProductService) GetByIDAdmin(ctx context.Context, id string) (*interfaces.Product, error) {
+	product, err := ps.store.GetByID(ctx, id)
+	if err != nil {
+		if errs.IsNoSuchEntityError(err) {
+			return nil, errs.ErrNoSuchEntity
 		}
+		return nil, err
 	}
-	if req.IsNew != nil {
-		fields["is_new"] = *req.IsNew
-	}
-	if req.IsOnSale != nil {
-		fields["is_on_sale"] = *req.IsOnSale
-	}
-	if req.IsActive != nil {
-		fields["is_active"] = *req.IsActive
-	}
-	if req.IsFeatured != nil {
-		fields["is_featured"] = *req.IsFeatured
-	}
-	if req.Tags != nil {
-		fields["tags"] = interfaces.StringArray(req.Tags)
+	return product, nil
+}
+
+// Update applies the full admin form to a product (scalars + images / sizes / colors).
+func (ps *ProductService) Update(ctx context.Context, id string, req *api.UpdateProductRequest) (*interfaces.Product, error) {
+	if req.Name == "" {
+		return nil, fmt.Errorf("name is required")
 	}
 
-	if len(fields) == 0 {
-		return ps.store.GetByID(ctx, id)
+	fields := map[string]interface{}{
+		"name":             req.Name,
+		"slug":             text.Slugify(req.Name),
+		"description":      req.Description,
+		"description_long": req.DescriptionLong,
+		"price":            req.Price,
+		"original_price":   req.OriginalPrice,
+		"is_new":           req.IsNew,
+		"is_on_sale":       req.IsOnSale,
+		"is_active":        req.IsActive,
+		"is_featured":      req.IsFeatured,
+		"tags":             interfaces.StringArray(req.Tags),
+		"meta_title":       req.MetaTitle,
+		"meta_description": req.MetaDescription,
 	}
-	return ps.store.Update(ctx, id, fields)
+	if req.SKU == "" {
+		fields["sku"] = nil
+	} else {
+		fields["sku"] = req.SKU
+	}
+	if req.CategoryID == "" {
+		fields["category_id"] = nil
+	} else {
+		cid, err := uuid.Parse(req.CategoryID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid category_id: %w", err)
+		}
+		fields["category_id"] = cid
+	}
+
+	if _, err := ps.store.Update(ctx, id, fields); err != nil {
+		return nil, err
+	}
+
+	images := make([]interfaces.ProductImage, 0, len(req.Images))
+	for _, img := range req.Images {
+		images = append(images, interfaces.ProductImage{
+			URL:       img.URL,
+			Alt:       img.Alt,
+			Position:  img.Position,
+			IsPrimary: img.IsPrimary,
+		})
+	}
+	if err := ps.store.UpsertImages(ctx, id, images); err != nil {
+		return nil, err
+	}
+
+	sizes := make([]interfaces.ProductSize, 0, len(req.Sizes))
+	for _, s := range req.Sizes {
+		sizes = append(sizes, interfaces.ProductSize{
+			Size:     s.Size,
+			Stock:    s.Stock,
+			Position: s.Position,
+		})
+	}
+	if err := ps.store.UpsertSizes(ctx, id, sizes); err != nil {
+		return nil, err
+	}
+
+	colors := make([]interfaces.ProductColor, 0, len(req.Colors))
+	for _, c := range req.Colors {
+		colors = append(colors, interfaces.ProductColor{
+			Name:     c.Name,
+			Hex:      c.Hex,
+			Stock:    c.Stock,
+			Position: c.Position,
+		})
+	}
+	if err := ps.store.UpsertColors(ctx, id, colors); err != nil {
+		return nil, err
+	}
+
+	return ps.store.GetByID(ctx, id)
 }
 
 // Delete soft-deletes a product
