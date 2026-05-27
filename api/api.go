@@ -7,12 +7,12 @@ import (
 // SignUpRequest signup request
 type SignUpRequest struct {
 	Email          string `json:"email,omitempty" valid:"email,required"`
-	Password       string `json:"password,omitempty" valid:"required"`
+	Password       string `json:"password,omitempty" valid:"required,minstringlength(8)"`
 	Username       string `json:"username"`
 	FirstName      string `json:"firstName,omitempty"`
 	LastName       string `json:"lastName,omitempty"`
 	AvatarURL      string `json:"avatarURL,omitempty"`
-	Role           string `json:"role,omitempty"`
+	Role           string `json:"-"`
 	Location       string `json:"location,omitempty"`
 	Provider       string `json:"provider,omitempty"`
 	ProviderID     string `json:"providerID,omitempty"`

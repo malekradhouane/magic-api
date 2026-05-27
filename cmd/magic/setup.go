@@ -301,15 +301,35 @@ func (rr *ResourcesRegistry) setupGinRouter() error {
 	rr.http.ginEngine.Static(PREFIX, FOLDER)
 	rr.http.ginEngine.Use(rr.http.ginJwt.LoggerWithUsername())
 	rr.http.ginEngine.Use(gin.Recovery())
-	rr.http.ginEngine.Use(cors.New(cors.Config{
-		// AllowOrigins:     []string{"*"},
+	// CORS: restrict to known frontend origins. Set CORS_ALLOWED_ORIGINS env
+	// var as a comma-separated list (e.g. "https://magic.tn,https://admin.magic.tn").
+	// Falls back to permissive localhost origins for local development only.
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	var allowedOrigins []string
+	if corsOrigins != "" {
+		for _, o := range strings.Split(corsOrigins, ",") {
+			if trimmed := strings.TrimSpace(o); trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
+	}
+	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS", "HEAD"},
-		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: false,
-		AllowAllOrigins:  true,
+		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
-	}))
+	}
+	if len(allowedOrigins) > 0 {
+		corsConfig.AllowOrigins = allowedOrigins
+	} else {
+		// Dev fallback — never use in production
+		corsConfig.AllowOriginFunc = func(origin string) bool {
+			return strings.HasPrefix(origin, "http://localhost") ||
+				strings.HasPrefix(origin, "http://127.0.0.1")
+		}
+	}
+	rr.http.ginEngine.Use(cors.New(corsConfig))
 
 	rr.http.ginRouterAPI = rr.http.ginEngine.Group("/api")
 

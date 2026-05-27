@@ -10,6 +10,7 @@ import (
 
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
 )
@@ -45,6 +46,7 @@ func (h *ProductHandler) SetupRoutes(g *gin.RouterGroup) {
 
 	admin := g.Group("/products")
 	admin.Use(h.auth)
+	admin.Use(middleware.RequireAdmin())
 	admin.POST("", h.Create)
 	admin.GET("/id/:id", h.GetByIDAdmin)
 	admin.PATCH("/:id", h.Update)

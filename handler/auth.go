@@ -26,9 +26,10 @@ type controller struct {
 	authService *service.AuthService
 	auth        *jwt.GinJWTMiddleware
 	ginJWT      *middleware.GinJWT
+	rateLimiter *middleware.RateLimiter
 }
 
-func NewController(cman configmanager.ManagerContract, auth *jwt.GinJWTMiddleware, ginJWT *middleware.GinJWT, authService *service.AuthService) (*controller, error) {
+func NewController(cman configmanager.ManagerContract, auth *jwt.GinJWTMiddleware, ginJWT *middleware.GinJWT, authService *service.AuthService, rateLimiter *middleware.RateLimiter) (*controller, error) {
 	if cman == nil {
 		return nil, fmt.Errorf("config manager is missing")
 	}
@@ -38,19 +39,22 @@ func NewController(cman configmanager.ManagerContract, auth *jwt.GinJWTMiddlewar
 		auth:        auth,
 		ginJWT:      ginJWT,
 		authService: authService,
+		rateLimiter: rateLimiter,
 	}, nil
 }
 
 // SetupRoutes creates routes for the provided group
 func (ctrl *controller) SetupRoutes(g *gin.RouterGroup) *gin.RouterGroup {
+	rl := ctrl.rateLimiter.Middleware()
+
 	// authenticate endpoint
-	g.POST("/authenticate", ctrl.auth.LoginHandler)
+	g.POST("/authenticate", rl, ctrl.auth.LoginHandler)
 
 	// get identity of authenticated user
 	g.GET("/identity", ctrl.auth.MiddlewareFunc(), ctrl.Identity)
 
 	// Refresh time can be longer than token timeout
-	g.POST("/refresh_token", ctrl.auth.RefreshHandler)
+	g.POST("/refresh_token", ctrl.auth.MiddlewareFunc(), ctrl.auth.RefreshHandler)
 
 	// get a permanent token for third-party app use only
 	g.GET("/generate-token", ctrl.auth.MiddlewareFunc(), ctrl.GenerateToken)
@@ -62,8 +66,8 @@ func (ctrl *controller) SetupRoutes(g *gin.RouterGroup) *gin.RouterGroup {
 	g.GET("/activate/:token", ctrl.ActivateAccount)
 
 	// password reset endpoints
-	g.POST("/forgot-password", ctrl.ForgotPassword)
-	g.POST("/reset-password", ctrl.ResetPassword)
+	g.POST("/forgot-password", rl, ctrl.ForgotPassword)
+	g.POST("/reset-password", rl, ctrl.ResetPassword)
 
 	g.GET("/auth/:provider", ctrl.StartAuth)
 	g.GET("/auth/:provider/callback", ctrl.CompleteAuth)
@@ -360,7 +364,7 @@ func (ctrl *controller) ForgotPassword(c *gin.Context) {
 func (ctrl *controller) ResetPassword(c *gin.Context) {
 	var req struct {
 		Token       string `json:"token" binding:"required"`
-		NewPassword string `json:"newPassword" binding:"required,min=6"`
+		NewPassword string `json:"newPassword" binding:"required,min=8"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

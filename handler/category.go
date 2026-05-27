@@ -9,6 +9,7 @@ import (
 
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
 )
@@ -42,6 +43,7 @@ func (h *CategoryHandler) SetupRoutes(g *gin.RouterGroup) {
 
 	admin := g.Group("/categories")
 	admin.Use(h.auth)
+	admin.Use(middleware.RequireAdmin())
 	admin.POST("", h.Create)
 	admin.PATCH("/:id", h.Update)
 	admin.DELETE("/:id", h.Delete)

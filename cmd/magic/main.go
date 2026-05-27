@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	_ "time/tzdata" // required to embed timezone data directly into the Go binary.
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -17,6 +18,7 @@ import (
 	"github.com/malekradhouane/magic/auth"
 	"github.com/malekradhouane/magic/docs"
 	"github.com/malekradhouane/magic/handler"
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/store"
 	"github.com/malekradhouane/magic/utils/httpresp"
@@ -94,8 +96,11 @@ func main() {
 
 	ginJWT := rr.http.ginJwt
 
+	// Rate limiter for auth endpoints: 10 requests per minute per IP
+	authLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
+
 	// Login endpoint
-	r.POST("/login", authMiddleware.LoginHandler)
+	r.POST("/login", authLimiter.Middleware(), authMiddleware.LoginHandler)
 
 	api := r.Group("/api")
 	userService := service.NewUserService(store.Users(), rr.logger)
@@ -120,7 +125,7 @@ func main() {
 	)
 
 	// Sets up auth routes
-	authCtrl, err := handler.NewController(rr.cman, authMiddleware, ginJWT, authService)
+	authCtrl, err := handler.NewController(rr.cman, authMiddleware, ginJWT, authService, authLimiter)
 	if err != nil {
 		rr.Shutdown(err)
 	}
@@ -148,8 +153,10 @@ func main() {
 	uploadHandler := handler.NewUploadHandler(rr.stores.r2Client, authMiddleware.MiddlewareFunc())
 	uploadHandler.SetupRoutes(api)
 
-	// Serve swagger documentation
-	r.GET("/swagger/*any", setDocumentationInfo, ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Serve swagger documentation (only in dev mode)
+	if os.Getenv("MODE") == "dev" || os.Getenv("GIN_MODE") != "release" {
+		r.GET("/swagger/*any", setDocumentationInfo, ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	// Starts up server
 	httpConfig := itconfig.HttpServer

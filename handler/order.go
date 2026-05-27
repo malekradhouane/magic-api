@@ -11,6 +11,7 @@ import (
 
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/errs"
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
 )
@@ -55,6 +56,7 @@ func (h *OrderHandler) SetupRoutes(g *gin.RouterGroup) {
 	// ne matche pas correctement un sous-groupe /admin/orders avec GET "" + "/:id").
 	adminAuthed := g.Group("")
 	adminAuthed.Use(h.auth)
+	adminAuthed.Use(middleware.RequireAdmin())
 	adminAuthed.GET("/admin/orders", h.AdminList)
 	adminAuthed.GET("/admin/orders/:id", h.AdminGet)
 	adminAuthed.PATCH("/admin/orders/:id", h.UpdateStatus)

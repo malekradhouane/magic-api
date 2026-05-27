@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -114,7 +115,11 @@ func (as *AuthService) SignUpWithPassword(ctx context.Context, req *api.SignUpRe
 		if err != nil {
 			as.logger.WithError(err).Warn("Failed to generate activation token")
 		} else {
-			activationLink := fmt.Sprintf("http://localhost:5002/api/activate/%s", token)
+			baseURL := os.Getenv("BASE_URL")
+			if baseURL == "" {
+				baseURL = "http://localhost:5002"
+			}
+			activationLink := fmt.Sprintf("%s/api/activate/%s", baseURL, token)
 			if err := as.SendActivationEmail(ctx, user, activationLink); err != nil {
 				as.logger.WithError(err).Error("Failed to send activation email")
 			}

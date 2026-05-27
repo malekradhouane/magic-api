@@ -12,6 +12,7 @@ import (
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/errs"
 	"github.com/malekradhouane/magic/magic/configmanager"
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/pkg/interfaces"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
@@ -43,11 +44,16 @@ func (uh *UserHandler) SetupUsersRoutes(g *gin.RouterGroup) *gin.RouterGroup {
 	users := g.Group("/" + endpoint)
 	{
 		users.Use(uh.auth)
-		users.GET("", uh.GetUsers)
 		users.GET("/:id", uh.GetUser)
-		users.DELETE("/:id", uh.DeleteUser)
 		users.PATCH("/:id", uh.UpdateUser)
+	}
 
+	adminUsers := g.Group("/" + endpoint)
+	{
+		adminUsers.Use(uh.auth)
+		adminUsers.Use(middleware.RequireAdmin())
+		adminUsers.GET("", uh.GetUsers)
+		adminUsers.DELETE("/:id", uh.DeleteUser)
 	}
 
 	return users

@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/pkg/storage/r2"
 	"github.com/malekradhouane/magic/utils/httpresp"
 )
@@ -55,6 +56,7 @@ func NewUploadHandler(r2Client *r2.Client, auth gin.HandlerFunc) *UploadHandler 
 func (h *UploadHandler) SetupRoutes(g *gin.RouterGroup) {
 	grp := g.Group("/uploads")
 	grp.Use(h.auth)
+	grp.Use(middleware.RequireAdmin())
 	grp.POST("/presign", h.Presign)
 }
 

@@ -14,33 +14,35 @@ import (
 )
 
 type GinJWT struct {
-	cman             configmanager.ManagerContract
-	userStore        types.UserStore
-	jwtSecret        string
-	defaultJWTSecret string
-	IdentityKey      string
+	cman        configmanager.ManagerContract
+	userStore   types.UserStore
+	jwtSecret   string
+	IdentityKey string
 }
 
 func NewGinJwt(cman configmanager.ManagerContract, userStore types.UserStore) (*GinJWT, error) {
 	return &GinJWT{
-		cman:             cman,
-		userStore:        userStore,
-		jwtSecret:        "",
-		defaultJWTSecret: "change-me-in-production",
-		IdentityKey:      "id",
+		cman:        cman,
+		userStore:   userStore,
+		jwtSecret:   "",
+		IdentityKey: "id",
 	}, nil
 }
 
 // GinJwtMiddlewareHandler handles authentication
 func (x *GinJWT) MiddlewareHandler() *jwt.GinJWTMiddleware {
-	const defaultTimeout = 15 * time.Hour
+	const defaultTimeout = 1 * time.Hour
 
 	customerConfig := x.cman.Magic().Customer
 
-	// retrieves secret
+	// retrieves secret — refuse to start with an empty or placeholder value.
+	// koanf lowercases env-var keys, so check both casings.
 	secret, _ := customerConfig["SECRET"].(string)
 	if secret == "" {
-		secret = x.defaultJWTSecret
+		secret, _ = customerConfig["secret"].(string)
+	}
+	if secret == "" || secret == "change-me-in-production" {
+		logrus.Fatal("JWT secret is not configured. Set MAGIC_CUSTOMER_SECRET or customer.SECRET in config.")
 	}
 
 	return &jwt.GinJWTMiddleware{

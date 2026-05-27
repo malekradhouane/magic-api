@@ -2,15 +2,24 @@ package httpresp
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/malekradhouane/magic/errs"
 )
 
-// NewErrorMessage sets error message to context
+// NewErrorMessage sets error message to context.
+// For 5xx responses the real error is logged server-side and a generic
+// message is returned to the client to avoid leaking internal details.
 func NewErrorMessage(ctx *gin.Context, status int, err string) {
+	if status >= 500 && os.Getenv("GIN_MODE") == "release" {
+		logrus.WithField("path", ctx.Request.URL.Path).Error(err)
+		NewError(ctx, status, errors.New("internal server error"))
+		return
+	}
 	NewError(ctx, status, errors.New(err))
 }
 

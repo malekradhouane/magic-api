@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 
 	"github.com/malekradhouane/magic/pkg/gatekeeper"
+	"github.com/malekradhouane/magic/utils/httpresp"
 )
 
 // DualTokenMiddleware validates Authorization bearer tokens issued either by gin-jwt or an OIDC provider.
@@ -60,4 +62,29 @@ func DualTokenMiddleware(ginAuth *jwt.GinJWTMiddleware, verifier *gatekeeper.Ver
 		// 3) Fallback to the standard gin-jwt middleware behavior
 		ginAuth.MiddlewareFunc()(c)
 	}
+}
+
+// RequireRole returns a middleware that checks the JWT "role" claim against
+// the supplied allowed roles. Must be chained AFTER the auth middleware so
+// that JWT_PAYLOAD is already populated.
+func RequireRole(allowed ...string) gin.HandlerFunc {
+	set := make(map[string]struct{}, len(allowed))
+	for _, r := range allowed {
+		set[strings.ToLower(r)] = struct{}{}
+	}
+	return func(c *gin.Context) {
+		claims := jwt.ExtractClaims(c)
+		role, _ := claims["role"].(string)
+		if _, ok := set[strings.ToLower(role)]; !ok {
+			httpresp.NewErrorMessage(c, http.StatusForbidden, "insufficient permissions")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+// RequireAdmin is a convenience wrapper that only lets admin / root / superadmin through.
+func RequireAdmin() gin.HandlerFunc {
+	return RequireRole("admin", "root", "superadmin")
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
 )
@@ -37,6 +38,7 @@ func (h *PromoHandler) SetupRoutes(g *gin.RouterGroup) {
 
 	admin := g.Group("/admin/promos")
 	admin.Use(h.auth)
+	admin.Use(middleware.RequireAdmin())
 	admin.POST("", h.Create)
 	admin.GET("", h.List)
 	admin.DELETE("/:id", h.Delete)

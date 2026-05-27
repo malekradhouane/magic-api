@@ -8,12 +8,12 @@ services:
     ports:
       - "5002:5002"
     environment:
-      - MODE=dev
+      - MODE=${MODE:-dev}
       - STORAGES_POSTGRESQL_HOST=postgres
-      - STORAGES_POSTGRESQL_PORT=5435
-      - STORAGES_POSTGRESQL_MAGICDB=magicdb
-      - STORAGES_POSTGRESQL_MAGICLOGIN=admin
-      - STORAGES_POSTGRESQL_MAGICPASS=magic-api
+      - STORAGES_POSTGRESQL_PORT=5432
+      - STORAGES_POSTGRESQL_MAGICDB=${POSTGRES_DB:-magicdb}
+      - STORAGES_POSTGRESQL_MAGICLOGIN=${POSTGRES_USER:-admin}
+      - STORAGES_POSTGRESQL_MAGICPASS=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     networks:
       - magic-network
 
@@ -22,9 +22,9 @@ services:
     container_name: magic-api-postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=magicdb
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=magic-api
+      - POSTGRES_DB=${POSTGRES_DB:-magicdb}
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -40,10 +40,10 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
       # Allow browser PUTs from the admin/front dev servers.
-      - MINIO_API_CORS_ALLOW_ORIGIN=*
+      - MINIO_API_CORS_ALLOW_ORIGIN=${MINIO_CORS_ORIGIN:-*}
     ports:
       - "9100:9000"   # S3 API (host:container)
       - "9101:9001"   # Web console
@@ -68,7 +68,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-minioadmin} $${MINIO_ROOT_PASSWORD:-minioadmin} &&
       mc mb --ignore-existing local/magic-products &&
       mc anonymous set download local/magic-products
       "
