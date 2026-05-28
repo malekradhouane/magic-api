@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -116,6 +117,10 @@ func main() {
 
 	// E-commerce services
 	categoryService := service.NewCategoryService(store.Categories(), rr.logger)
+	// Ensure the default product-type taxonomy exists (idempotent, runs each boot).
+	if err := categoryService.SeedDefaults(context.Background()); err != nil {
+		rr.logger.WithError(err).Warn("failed to seed default categories")
+	}
 	productService := service.NewProductService(store.Products(), rr.logger)
 	promoService := service.NewPromoService(store.Promos(), rr.logger)
 	frontendURL := os.Getenv("FRONTEND_URL")

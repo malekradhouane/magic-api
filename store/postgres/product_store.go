@@ -165,7 +165,8 @@ func (ps *ProductStore) List(ctx context.Context, filters *api.ProductFilters) (
 	db := ps.session.GetDB().WithContext(ctx).Model(&interfaces.Product{}).
 		Where("products.is_active = ? AND products.deleted_at IS NULL", true)
 
-	// Category filter (by slug)
+	// Category filter (by slug). A parent (group) slug also matches products
+	// assigned to any of its sub-categories, so /vetements returns t-shirts too.
 	if filters.Category != "" && filters.Category != "all" {
 		switch filters.Category {
 		case "new":
@@ -174,8 +175,14 @@ func (ps *ProductStore) List(ctx context.Context, filters *api.ProductFilters) (
 			db = db.Where("is_on_sale = ?", true)
 		default:
 			db = db.Joins("LEFT JOIN categories c ON c.id = products.category_id").
-				Where("c.slug = ?", filters.Category)
+				Joins("LEFT JOIN categories pc ON pc.id = c.parent_id").
+				Where("c.slug = ? OR pc.slug = ?", filters.Category, filters.Category)
 		}
+	}
+
+	// Gender / audience filter. "unisexe" products surface in every audience.
+	if filters.Gender != "" && filters.Gender != "all" {
+		db = db.Where("products.gender = ? OR products.gender = ?", filters.Gender, "unisexe")
 	}
 
 	if filters.IsNew != nil {

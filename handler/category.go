@@ -56,6 +56,16 @@ func (h *CategoryHandler) SetupRoutes(g *gin.RouterGroup) {
 // @Success 200 {array} interfaces.Category
 // @Router /categories [get]
 func (h *CategoryHandler) List(c *gin.Context) {
+	if c.Query("tree") == "true" {
+		cats, err := h.service.ListTree(c.Request.Context())
+		if err != nil {
+			httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		httpresp.NewResult(c, http.StatusOK, cats)
+		return
+	}
+
 	cats, err := h.service.List(c.Request.Context())
 	if err != nil {
 		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())

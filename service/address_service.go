@@ -12,6 +12,7 @@ import (
 	"github.com/malekradhouane/magic/errs"
 	"github.com/malekradhouane/magic/pkg/interfaces"
 	"github.com/malekradhouane/magic/store/types"
+	"github.com/malekradhouane/magic/utils/phone"
 )
 
 // AddressService handles user address business logic.
@@ -46,6 +47,11 @@ func (s *AddressService) Create(ctx context.Context, userID string, req *api.Cre
 		return nil, err
 	}
 
+	normalizedPhone, err := phone.Normalize(req.Phone)
+	if err != nil {
+		return nil, err
+	}
+
 	label := strings.TrimSpace(req.Label)
 	if label == "" {
 		label = "Domicile"
@@ -56,7 +62,7 @@ func (s *AddressService) Create(ctx context.Context, userID string, req *api.Cre
 		Label:       label,
 		FirstName:   strings.TrimSpace(req.FirstName),
 		LastName:    strings.TrimSpace(req.LastName),
-		Phone:       normalizePhone(req.Phone),
+		Phone:       normalizedPhone,
 		Gouvernorat: strings.TrimSpace(req.Gouvernorat),
 		Address:     strings.TrimSpace(req.Address),
 		PostalCode:  strings.TrimSpace(req.PostalCode),
@@ -85,7 +91,11 @@ func (s *AddressService) Update(ctx context.Context, userID, id string, req *api
 		existing.LastName = strings.TrimSpace(*req.LastName)
 	}
 	if req.Phone != nil {
-		existing.Phone = normalizePhone(*req.Phone)
+		np, err := phone.Normalize(*req.Phone)
+		if err != nil {
+			return nil, err
+		}
+		existing.Phone = np
 	}
 	if req.Gouvernorat != nil {
 		existing.Gouvernorat = strings.TrimSpace(*req.Gouvernorat)
@@ -186,6 +196,14 @@ func validateAddressRequest(req *api.CreateAddressRequest) error {
 	return nil
 }
 
-func normalizePhone(phone string) string {
-	return strings.ReplaceAll(strings.TrimSpace(phone), " ", "")
+// normalizePhone returns the canonical "+216XXXXXXXX" form when the input
+// is a valid Tunisian number, otherwise it falls back to a simple
+// whitespace-stripped value. This best-effort behavior matters for
+// internal callers like SaveFromShipping where the phone has already
+// been validated at the API boundary.
+func normalizePhone(raw string) string {
+	if v, err := phone.Normalize(raw); err == nil {
+		return v
+	}
+	return strings.ReplaceAll(strings.TrimSpace(raw), " ", "")
 }

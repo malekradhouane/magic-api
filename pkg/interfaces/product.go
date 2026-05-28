@@ -33,6 +33,10 @@ type Product struct {
 	CategoryID *uuid.UUID `gorm:"type:uuid" json:"category_id"`
 	Category   *Category  `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
 
+	// Gender / audience dimension (homme | femme | enfant | unisexe), independent
+	// from the product-type category tree.
+	Gender string `gorm:"type:varchar(20)" json:"gender,omitempty"`
+
 	// Status flags
 	IsNew      bool `gorm:"not null;default:false" json:"is_new"`
 	IsOnSale   bool `gorm:"not null;default:false" json:"is_on_sale"`
@@ -51,7 +55,7 @@ type Product struct {
 	Tags StringArray `gorm:"type:text[]" json:"tags"`
 
 	// Metadata
-	Metadata *map[string]interface{} `gorm:"type:jsonb" json:"metadata,omitempty"`
+	Metadata JSONMap `gorm:"type:jsonb" json:"metadata,omitempty"`
 
 	// Relations (loaded on demand)
 	Images []ProductImage `gorm:"foreignKey:ProductID" json:"images,omitempty"`

@@ -22,7 +22,10 @@ type Category struct {
 	Position    int        `gorm:"not null;default:0" json:"position"`
 	IsActive    bool       `gorm:"not null;default:true" json:"is_active"`
 
-	Metadata    *map[string]interface{} `gorm:"type:jsonb" json:"metadata,omitempty"`
+	Metadata    JSONMap    `gorm:"type:jsonb" json:"metadata,omitempty"`
+
+	// Children holds direct sub-categories when the tree is loaded (parents only).
+	Children []*Category `gorm:"foreignKey:ParentID" json:"children,omitempty"`
 }
 
 // TableName overrides default GORM naming

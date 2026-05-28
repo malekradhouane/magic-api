@@ -37,6 +37,7 @@ func (cs *CategoryService) Create(ctx context.Context, req *api.CreateCategoryRe
 		ImageURL:    req.ImageURL,
 		Position:    req.Position,
 		IsActive:    req.IsActive,
+		Metadata:    req.Metadata,
 	}
 	if req.ParentID != nil && *req.ParentID != "" {
 		parentID, err := uuid.Parse(*req.ParentID)
@@ -83,6 +84,16 @@ func (cs *CategoryService) List(ctx context.Context) ([]*interfaces.Category, er
 	return cs.store.List(ctx)
 }
 
+// ListTree returns active top-level categories with their sub-categories nested.
+func (cs *CategoryService) ListTree(ctx context.Context) ([]*interfaces.Category, error) {
+	return cs.store.ListTree(ctx)
+}
+
+// SeedDefaults idempotently ensures the default category taxonomy exists.
+func (cs *CategoryService) SeedDefaults(ctx context.Context) error {
+	return cs.store.SeedDefaultCategories(ctx)
+}
+
 // Update applies the requested updates to a category
 func (cs *CategoryService) Update(ctx context.Context, id string, req *api.UpdateCategoryRequest) (*interfaces.Category, error) {
 	fields := map[string]interface{}{}
@@ -112,6 +123,9 @@ func (cs *CategoryService) Update(ctx context.Context, id string, req *api.Updat
 			}
 			fields["parent_id"] = pid
 		}
+	}
+	if req.Metadata != nil {
+		fields["metadata"] = *req.Metadata
 	}
 	return cs.store.Update(ctx, id, fields)
 }

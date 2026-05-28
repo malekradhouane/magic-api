@@ -15,6 +15,7 @@ import (
 	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
+	"github.com/malekradhouane/magic/utils/phone"
 )
 
 // OrderHandler exposes order endpoints
@@ -82,10 +83,15 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	if req.ShippingInfo.Phone == "" {
-		httpresp.NewErrorMessage(c, http.StatusBadRequest, "phone is required for delivery")
+	// Phone validation: the admin will call the customer to confirm the order,
+	// so we must guarantee the number is a valid Tunisian phone. We also
+	// normalize it ("+216XXXXXXXX") for consistent storage/lookup.
+	normalizedPhone, err := phone.Normalize(req.ShippingInfo.Phone)
+	if err != nil {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	req.ShippingInfo.Phone = normalizedPhone
 
 	// Try to extract user ID from JWT (optional for guest checkout)
 	userID := extractUserIDOptional(c)

@@ -32,6 +32,8 @@ type CategoryStore interface {
 	GetByID(ctx context.Context, id string) (*interfaces.Category, error)
 	GetBySlug(ctx context.Context, slug string) (*interfaces.Category, error)
 	List(ctx context.Context) ([]*interfaces.Category, error)
+	ListTree(ctx context.Context) ([]*interfaces.Category, error)
+	SeedDefaultCategories(ctx context.Context) error
 	Update(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.Category, error)
 	Delete(ctx context.Context, id string) error
 }

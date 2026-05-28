@@ -11,6 +11,7 @@ import (
 // ProductFilters represents query filters for product listings
 type ProductFilters struct {
 	Category   string   `form:"category"`
+	Gender     string   `form:"gender"`
 	Sizes      []string `form:"sizes"`
 	Colors     []string `form:"colors"`
 	MinPrice   *float64 `form:"min_price"`
@@ -42,6 +43,7 @@ type CreateProductRequest struct {
 	Price           float64                     `json:"price" valid:"required"`
 	OriginalPrice   *float64                    `json:"original_price"`
 	CategoryID      *string                     `json:"category_id"`
+	Gender          string                      `json:"gender"`
 	IsNew           bool                        `json:"is_new"`
 	IsOnSale        bool                        `json:"is_on_sale"`
 	IsActive        bool                        `json:"is_active"`
@@ -83,6 +85,7 @@ type UpdateProductRequest struct {
 	Price           float64                     `json:"price"`
 	OriginalPrice   *float64                    `json:"original_price"`
 	CategoryID      string                      `json:"category_id"`
+	Gender          string                      `json:"gender"`
 	IsNew           bool                        `json:"is_new"`
 	IsOnSale        bool                        `json:"is_on_sale"`
 	IsActive        bool                        `json:"is_active"`
@@ -101,22 +104,24 @@ type UpdateProductRequest struct {
 
 // CreateCategoryRequest is used by admins to create a category
 type CreateCategoryRequest struct {
-	Name        string  `json:"name" valid:"required"`
-	Description string  `json:"description"`
-	ImageURL    string  `json:"image_url"`
-	ParentID    *string `json:"parent_id"`
-	Position    int     `json:"position"`
-	IsActive    bool    `json:"is_active"`
+	Name        string             `json:"name" valid:"required"`
+	Description string             `json:"description"`
+	ImageURL    string             `json:"image_url"`
+	ParentID    *string            `json:"parent_id"`
+	Position    int                `json:"position"`
+	IsActive    bool               `json:"is_active"`
+	Metadata    interfaces.JSONMap `json:"metadata,omitempty"`
 }
 
 // UpdateCategoryRequest is used by admins to update a category
 type UpdateCategoryRequest struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
-	ImageURL    *string `json:"image_url,omitempty"`
-	ParentID    *string `json:"parent_id,omitempty"`
-	Position    *int    `json:"position,omitempty"`
-	IsActive    *bool   `json:"is_active,omitempty"`
+	Name        *string             `json:"name,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	ImageURL    *string             `json:"image_url,omitempty"`
+	ParentID    *string             `json:"parent_id,omitempty"`
+	Position    *int                `json:"position,omitempty"`
+	IsActive    *bool               `json:"is_active,omitempty"`
+	Metadata    *interfaces.JSONMap `json:"metadata,omitempty"`
 }
 
 // ============================================================================

@@ -14,6 +14,7 @@ import (
 	"github.com/malekradhouane/magic/pkg/interfaces"
 	"github.com/malekradhouane/magic/store/types"
 	"github.com/malekradhouane/magic/utils/encrypt"
+	"github.com/malekradhouane/magic/utils/phone"
 )
 
 // UserService user service
@@ -194,6 +195,17 @@ func (us *UserService) DeleteUser(ctx context.Context, id string) error {
 
 // UpdateUser updates a user's information
 func (us *UserService) UpdateUser(ctx context.Context, id string, req *api.UpdateUserRequest) (*interfaces.User, error) {
+	// Validate & normalize the phone number when the caller supplies one.
+	// The order workflow requires a valid Tunisian number so the admin can
+	// call the customer to confirm orders by phone.
+	if strings.TrimSpace(req.PhoneNumber) != "" {
+		normalized, err := phone.Normalize(req.PhoneNumber)
+		if err != nil {
+			return nil, err
+		}
+		req.PhoneNumber = normalized
+	}
+
 	updatedUser, err := us.userStore.UpdateUser(ctx, id, req.ToUser())
 	if err != nil {
 		if errs.IsNoSuchEntityError(err) {
@@ -207,6 +219,16 @@ func (us *UserService) UpdateUser(ctx context.Context, id string, req *api.Updat
 
 // UpdateUserFields updates specific fields of a user
 func (us *UserService) UpdateUserFields(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.User, error) {
+	if raw, ok := fields["phone_number"]; ok {
+		if s, ok := raw.(string); ok && strings.TrimSpace(s) != "" {
+			normalized, err := phone.Normalize(s)
+			if err != nil {
+				return nil, err
+			}
+			fields["phone_number"] = normalized
+		}
+	}
+
 	updatedUser, err := us.userStore.UpdateUserFields(ctx, id, fields)
 	if err != nil {
 		if errs.IsNoSuchEntityError(err) {

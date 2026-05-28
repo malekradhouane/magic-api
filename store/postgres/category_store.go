@@ -94,6 +94,88 @@ func (cs *CategoryStore) List(ctx context.Context) ([]*interfaces.Category, erro
 	return categories, nil
 }
 
+// ListTree returns active top-level categories with their direct children
+// preloaded, ordered by position.
+func (cs *CategoryStore) ListTree(ctx context.Context) ([]*interfaces.Category, error) {
+	var categories []*interfaces.Category
+	if err := cs.session.GetDB().WithContext(ctx).
+		Where("parent_id IS NULL AND is_active = ? AND deleted_at IS NULL", true).
+		Preload("Children", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_active = ? AND deleted_at IS NULL", true).
+				Order("position ASC, name ASC")
+		}).
+		Order("position ASC, name ASC").
+		Find(&categories).Error; err != nil {
+		return nil, fmt.Errorf("failed to list category tree: %w", err)
+	}
+	return categories, nil
+}
+
+// SeedDefaultCategories idempotently ensures the default 2-level product-type
+// taxonomy exists (groups -> sub-categories). Safe to run on every startup:
+// existing slugs are left untouched thanks to ON CONFLICT DO NOTHING.
+func (cs *CategoryStore) SeedDefaultCategories(ctx context.Context) error {
+	db := cs.session.GetDB().WithContext(ctx)
+
+	// Top-level groups.
+	if err := db.Exec(`
+		INSERT INTO categories (slug, name, position, is_active) VALUES
+			('vetements',   'Vêtements',   1, TRUE),
+			('chaussures',  'Chaussures',  2, TRUE),
+			('accessoires', 'Accessoires', 3, TRUE)
+		ON CONFLICT (slug) DO NOTHING
+	`).Error; err != nil {
+		return fmt.Errorf("failed to seed category groups: %w", err)
+	}
+
+	// Sub-categories, linked to their parent group by slug.
+	if err := db.Exec(`
+		INSERT INTO categories (slug, name, parent_id, position, is_active)
+		SELECT child.slug, child.name, parent.id, child.position, TRUE
+		FROM (
+			VALUES
+				('t-shirts',        'T-shirts',             'vetements',    1),
+				('chemises',        'Chemises',             'vetements',    2),
+				('pulls-gilets',    'Pulls & Gilets',       'vetements',    3),
+				('vestes-manteaux', 'Vestes & Manteaux',    'vetements',    4),
+				('pantalons',       'Pantalons',            'vetements',    5),
+				('jeans',           'Jeans',                'vetements',    6),
+				('shorts',          'Shorts',               'vetements',    7),
+				('robes',           'Robes',                'vetements',    8),
+				('jupes',           'Jupes',                'vetements',    9),
+				('baskets',         'Baskets',              'chaussures',   1),
+				('bottes',          'Bottes & Bottines',    'chaussures',   2),
+				('sandales',        'Sandales',             'chaussures',   3),
+				('sacs',            'Sacs',                 'accessoires',  1),
+				('ceintures',       'Ceintures',            'accessoires',  2),
+				('chapeaux',        'Chapeaux & Casquettes','accessoires',  3),
+				('echarpes',        'Écharpes & Foulards',  'accessoires',  4)
+		) AS child(slug, name, parent_slug, position)
+		JOIN categories parent ON parent.slug = child.parent_slug
+		ON CONFLICT (slug) DO NOTHING
+	`).Error; err != nil {
+		return fmt.Errorf("failed to seed sub-categories: %w", err)
+	}
+
+	// Default gender scope for gender-specific categories (metadata.genders).
+	// Only applied when the key is absent, so admin edits are never overwritten.
+	// Categories without this key are shown for every gender.
+	genderScopes := map[string][]string{
+		`["femme","enfant"]`: {"robes", "jupes"},
+	}
+	for genders, slugs := range genderScopes {
+		if err := db.Exec(`
+			UPDATE categories
+			SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{genders}', ?::jsonb)
+			WHERE slug IN ? AND NOT jsonb_exists(COALESCE(metadata, '{}'::jsonb), 'genders')
+		`, genders, slugs).Error; err != nil {
+			return fmt.Errorf("failed to set category gender scope: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // Update applies the given fields to a category
 func (cs *CategoryStore) Update(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.Category, error) {
 	if id == "" {
