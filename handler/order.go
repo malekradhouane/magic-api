@@ -8,6 +8,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/errs"
@@ -18,13 +19,14 @@ import (
 
 // OrderHandler exposes order endpoints
 type OrderHandler struct {
-	service *service.OrderService
-	auth    gin.HandlerFunc
+	service      *service.OrderService
+	auth         gin.HandlerFunc
+	optionalAuth gin.HandlerFunc
 }
 
 // NewOrderHandler constructs an OrderHandler
-func NewOrderHandler(s *service.OrderService, auth gin.HandlerFunc) *OrderHandler {
-	return &OrderHandler{service: s, auth: auth}
+func NewOrderHandler(s *service.OrderService, auth, optionalAuth gin.HandlerFunc) *OrderHandler {
+	return &OrderHandler{service: s, auth: auth, optionalAuth: optionalAuth}
 }
 
 // SetupRoutes registers order routes
@@ -43,9 +45,9 @@ func NewOrderHandler(s *service.OrderService, auth gin.HandlerFunc) *OrderHandle
 //	GET  /admin/orders/:id
 //	PATCH /admin/orders/:id
 func (h *OrderHandler) SetupRoutes(g *gin.RouterGroup) {
-	// Public (guest-friendly)
-	g.POST("/orders", h.Create)
-	g.GET("/orders/:id", h.Get)
+	// Public (guest-friendly); optionalAuth links orders to logged-in users when a Bearer token is sent.
+	g.POST("/orders", h.optionalAuth, h.Create)
+	g.GET("/orders/:id", h.optionalAuth, h.Get)
 
 	// Authenticated (current user)
 	authed := g.Group("")
@@ -165,6 +167,10 @@ func (h *OrderHandler) ListMyOrders(c *gin.Context) {
 	userID := extractUserIDOptional(c)
 	if userID == "" {
 		httpresp.NewErrorMessage(c, http.StatusUnauthorized, "authentication required")
+		return
+	}
+	if _, err := uuid.Parse(userID); err != nil {
+		httpresp.NewErrorMessage(c, http.StatusUnauthorized, "invalid user identity")
 		return
 	}
 

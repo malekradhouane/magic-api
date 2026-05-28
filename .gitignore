@@ -10,5 +10,5 @@ config/config.yaml
 .github/workflows/kubeconfig.yaml
 
 /docs
-/bin
+/bin/magic
 .DS_Store

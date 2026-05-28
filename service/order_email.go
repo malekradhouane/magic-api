@@ -5,11 +5,19 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/malekradhouane/magic/pkg/interfaces"
 	"github.com/malekradhouane/magic/pkg/mailer/template"
 )
+
+func (os *OrderService) sendOrderConfirmationEmailAsync(order *interfaces.Order) {
+	if order == nil {
+		return
+	}
+	go os.sendOrderConfirmationEmail(context.Background(), order)
+}
 
 func (os *OrderService) sendOrderConfirmationEmail(ctx context.Context, order *interfaces.Order) {
 	if order == nil {
@@ -21,7 +29,9 @@ func (os *OrderService) sendOrderConfirmationEmail(ctx context.Context, order *i
 		return
 	}
 	if os.mailer == nil {
-		os.logger.Warn("Mailer not configured, skipping order confirmation email")
+		os.logger.WithField("order_id", order.ID).Warn(
+			"Mailer not configured (set MAILJET_API_KEY_PUBLIC and MAILJET_API_KEY_PRIVATE), skipping order confirmation email",
+		)
 		return
 	}
 
@@ -37,10 +47,11 @@ func (os *OrderService) sendOrderConfirmationEmail(ctx context.Context, order *i
 		toName, order.OrderNumber, formatMoney(order.TotalPrice, order.Currency), os.orderTrackingURL(order),
 	)
 
-	if err := os.mailer.Send(ctx, "Magic", "", toName, toEmail, subject, text, html); err != nil {
+	if err := os.mailer.Send(ctx, os.mailFromName, os.mailFromEmail, toName, toEmail, subject, text, html); err != nil {
 		os.logger.WithError(err).WithFields(logrus.Fields{
-			"order_id": order.ID,
-			"email":    toEmail,
+			"order_id":   order.ID,
+			"email":      toEmail,
+			"from_email": os.mailFromEmail,
 		}).Error("Failed to send order confirmation email")
 		return
 	}
@@ -92,10 +103,11 @@ func (os *OrderService) sendOrderShippedEmail(ctx context.Context, order *interf
 	}
 	text += fmt.Sprintf("\n\nVoir la commande : %s\n", data.OrderURL)
 
-	if err := os.mailer.Send(ctx, "Magic", "", toName, toEmail, subject, text, html); err != nil {
+	if err := os.mailer.Send(ctx, os.mailFromName, os.mailFromEmail, toName, toEmail, subject, text, html); err != nil {
 		os.logger.WithError(err).WithFields(logrus.Fields{
-			"order_id": order.ID,
-			"email":    toEmail,
+			"order_id":   order.ID,
+			"email":      toEmail,
+			"from_email": os.mailFromEmail,
 		}).Error("Failed to send order shipped email")
 		return
 	}
@@ -222,4 +234,3 @@ func formatPaymentMethod(method string) string {
 		return method
 	}
 }
-

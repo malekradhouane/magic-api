@@ -118,10 +118,14 @@ func (os *OrderStore) GetByOrderNumber(ctx context.Context, orderNumber string) 
 
 // GetByPhone retrieves an order using its ID + phone (used for guest checkout lookups)
 func (os *OrderStore) GetByPhone(ctx context.Context, orderID, phone string) (*interfaces.Order, error) {
+	phone = normalizeOrderPhone(phone)
 	o := new(interfaces.Order)
 	err := os.session.GetDB().WithContext(ctx).
 		Preload("Items").
-		Where("id = ? AND shipping_info->>'phone' = ?", orderID, phone).
+		Where(
+			"id = ? AND regexp_replace(shipping_info->>'phone', '\\s', '', 'g') = ?",
+			orderID, phone,
+		).
 		Take(o).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -132,15 +136,20 @@ func (os *OrderStore) GetByPhone(ctx context.Context, orderID, phone string) (*i
 	return o, nil
 }
 
-// ListByUserID returns orders for a given user
+// ListByUserID returns orders owned by the given user (strict user_id match).
 func (os *OrderStore) ListByUserID(ctx context.Context, userID string, limit, offset int) ([]*interfaces.Order, int64, error) {
 	if limit <= 0 {
 		limit = 20
 	}
 
+	uid, err := uuid.Parse(strings.TrimSpace(userID))
+	if err != nil {
+		return nil, 0, fmt.Errorf("invalid user id: %w", err)
+	}
+
 	db := os.session.GetDB().WithContext(ctx).
 		Model(&interfaces.Order{}).
-		Where("user_id = ?", userID)
+		Where("user_id = ?", uid)
 
 	var totalCount int64
 	if err := db.Count(&totalCount).Error; err != nil {
@@ -157,6 +166,15 @@ func (os *OrderStore) ListByUserID(ctx context.Context, userID string, limit, of
 		return nil, 0, fmt.Errorf("failed to list user orders: %w", err)
 	}
 	return orders, totalCount, nil
+}
+
+func normalizeOrderPhone(phone string) string {
+	return strings.Map(func(r rune) rune {
+		if r == ' ' || r == '\t' || r == '-' {
+			return -1
+		}
+		return r
+	}, strings.TrimSpace(phone))
 }
 
 // List returns paginated, filtered orders (admin)

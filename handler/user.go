@@ -86,14 +86,9 @@ func (uh *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Use the unified auth service
 	result, err := uh.authService.SignUpWithPassword(c.Request.Context(), req)
-	if errors.Is(err, errs.ErrEmailTaken) {
-		httpresp.NewErrorMessage(c, http.StatusConflict, err.Error())
-		return
-	}
 	if err != nil {
-		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
+		httpresp.FromError(c, err)
 		return
 	}
 

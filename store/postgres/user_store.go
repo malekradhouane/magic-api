@@ -56,6 +56,9 @@ func (us *UserStore) CreateUser(ctx context.Context, user *interfaces.User, comp
 
 	// Actually insert the user into the database
 	if err := us.session.GetDB().Create(user).Error; err != nil {
+		if isEmailDuplicateError(wrapPgError(err)) {
+			return nil, errs.ErrEmailTaken
+		}
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 

@@ -58,6 +58,16 @@ func wrapPgError(err error) error {
 	return err
 }
 
+// isEmailDuplicateError reports whether err is a unique-violation on the users email index.
+func isEmailDuplicateError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "idx_users_email") ||
+		(strings.Contains(msg, "duplicate key") && strings.Contains(msg, "email"))
+}
+
 func ToSnakeCase(str string) string {
 	// Regular expression to match uppercase letters or sequences of them
 	re := regexp.MustCompile("([a-z0-9])([A-Z])")

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -32,20 +33,35 @@ type AuthIdentity struct {
 
 // AuthService handles authentication operations
 type AuthService struct {
-	userStore types.UserStore
-	logger    *logrus.Logger
-	mailer    mailer.Mailer
+	userStore     types.UserStore
+	logger        *logrus.Logger
+	mailer        mailer.Mailer
+	mailFromName  string
+	mailFromEmail string
 }
 
 // NewAuthService creates a new auth service
-func NewAuthService(userStore types.UserStore, logger *logrus.Logger, mailer mailer.Mailer) *AuthService {
+func NewAuthService(
+	userStore types.UserStore,
+	logger *logrus.Logger,
+	mailer mailer.Mailer,
+	mailFromName, mailFromEmail string,
+) *AuthService {
 	if logger == nil {
 		logger = logrus.New()
 	}
+	if strings.TrimSpace(mailFromName) == "" {
+		mailFromName = "Magic"
+	}
+	if strings.TrimSpace(mailFromEmail) == "" {
+		mailFromEmail = "noreply@magic.fr"
+	}
 	return &AuthService{
-		userStore: userStore,
-		logger:    logger,
-		mailer:    mailer,
+		userStore:     userStore,
+		logger:        logger,
+		mailer:        mailer,
+		mailFromName:  mailFromName,
+		mailFromEmail: mailFromEmail,
 	}
 }
 
@@ -67,6 +83,10 @@ func (as *AuthService) SignUpWithPassword(ctx context.Context, req *api.SignUpRe
 	}
 
 	isNewUser := user == nil
+	if !isNewUser {
+		as.logger.WithField("email", email).Warn("Signup attempted with existing email")
+		return nil, errs.ErrEmailTaken
+	}
 
 	// Hash password
 	hashedPassword, err := encrypt.Hash(req.Password)
@@ -74,22 +94,27 @@ func (as *AuthService) SignUpWithPassword(ctx context.Context, req *api.SignUpRe
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	if isNewUser {
-		// Create new user
-		user = &interfaces.User{
-			Email:     email,
-			Username:  req.Username,
-			FirstName: req.FirstName,
-			LastName:  req.LastName,
-			AvatarURL: req.AvatarURL,
-			Role:      "user",
-			CreatedAt: time.Now(),
-		}
+	username := strings.TrimSpace(req.Username)
+	if username == "" {
+		username = email
+	}
 
-		user, err = as.userStore.CreateUser(ctx, user, "", "user")
-		if err != nil {
-			return nil, fmt.Errorf("failed to create user: %w", err)
+	user = &interfaces.User{
+		Email:     email,
+		Username:  username,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		AvatarURL: req.AvatarURL,
+		Role:      "user",
+		CreatedAt: time.Now(),
+	}
+
+	user, err = as.userStore.CreateUser(ctx, user, "", "user")
+	if err != nil {
+		if errors.Is(err, errs.ErrEmailTaken) {
+			return nil, errs.ErrEmailTaken
 		}
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	// In a real implementation, you would create an AuthIdentity record here
@@ -295,7 +320,7 @@ func (as *AuthService) SendPasswordResetEmail(ctx context.Context, user *interfa
 	}
 
 	err = as.mailer.Send(ctx,
-		"Magic", "noreply@magic.fr",
+		as.mailFromName, as.mailFromEmail,
 		user.FirstName+" "+user.LastName, user.Email,
 		"Reset your Magic password",
 		"Please reset your password by clicking the link: "+resetLink,
@@ -396,7 +421,7 @@ func (as *AuthService) SendActivationEmail(ctx context.Context, user *interfaces
 	}
 
 	err = as.mailer.Send(ctx,
-		"Magic", "noreply@magic.fr",
+		as.mailFromName, as.mailFromEmail,
 		user.FirstName+" "+user.LastName, user.Email,
 		"Activate your Magic account",
 		"Please activate your account by clicking the link: "+activationLink,
@@ -410,6 +435,7 @@ func (as *AuthService) SendActivationEmail(ctx context.Context, user *interfaces
 	as.logger.WithFields(logrus.Fields{
 		"user_id": user.ID,
 		"email":   user.Email,
+		"from":    as.mailFromEmail,
 	}).Info("Activation email sent")
 
 	return nil

@@ -104,7 +104,15 @@ func main() {
 
 	api := r.Group("/api")
 	userService := service.NewUserService(store.Users(), rr.logger)
-	authService := service.NewAuthService(store.Users(), rr.logger, rr.mailer)
+	mailjetCfg := rr.cman.Magic().Email.Mailjet
+	applyMailjetEnvOverrides(&mailjetCfg)
+	authService := service.NewAuthService(
+		store.Users(),
+		rr.logger,
+		rr.mailer,
+		mailjetCfg.FromName,
+		mailjetCfg.FromEmail,
+	)
 
 	// E-commerce services
 	categoryService := service.NewCategoryService(store.Categories(), rr.logger)
@@ -114,12 +122,16 @@ func main() {
 	if frontendURL == "" {
 		frontendURL = "http://localhost:3000"
 	}
+	addressService := service.NewAddressService(store.Addresses(), rr.logger)
 	orderService := service.NewOrderService(
 		store.Orders(),
 		store.Products(),
 		promoService,
 		store.Users(),
+		addressService,
 		rr.mailer,
+		mailjetCfg.FromName,
+		mailjetCfg.FromEmail,
 		frontendURL,
 		rr.logger,
 	)
@@ -142,8 +154,15 @@ func main() {
 	productHandler := handler.NewProductHandler(productService, authMiddleware.MiddlewareFunc())
 	productHandler.SetupRoutes(api)
 
-	orderHandler := handler.NewOrderHandler(orderService, authMiddleware.MiddlewareFunc())
+	orderHandler := handler.NewOrderHandler(
+		orderService,
+		authMiddleware.MiddlewareFunc(),
+		middleware.OptionalJWTMiddleware(authMiddleware),
+	)
 	orderHandler.SetupRoutes(api)
+
+	addressHandler := handler.NewAddressHandler(addressService, authMiddleware.MiddlewareFunc())
+	addressHandler.SetupRoutes(api)
 
 	promoHandler := handler.NewPromoHandler(promoService, authMiddleware.MiddlewareFunc())
 	promoHandler.SetupRoutes(api)

@@ -47,6 +47,17 @@ type OrderStore interface {
 	UpdateStatus(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.Order, error)
 }
 
+// AddressStore manages user shipping addresses
+type AddressStore interface {
+	ListByUserID(ctx context.Context, userID string) ([]*interfaces.Address, error)
+	GetByID(ctx context.Context, userID, id string) (*interfaces.Address, error)
+	FindMatching(ctx context.Context, userID, phone, gouvernorat, addressLine string) (*interfaces.Address, error)
+	Create(ctx context.Context, addr *interfaces.Address) (*interfaces.Address, error)
+	Update(ctx context.Context, addr *interfaces.Address) (*interfaces.Address, error)
+	SetDefault(ctx context.Context, userID, id string) error
+	Delete(ctx context.Context, userID, id string) error
+}
+
 // PromoStore manages promo code persistence
 type PromoStore interface {
 	Create(ctx context.Context, promo *interfaces.PromoCode) (*interfaces.PromoCode, error)

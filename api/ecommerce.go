@@ -156,14 +156,14 @@ type UpdateOrderStatusRequest struct {
 
 // ListOrdersFilters for admin order listing
 type ListOrdersFilters struct {
-	Status         string `form:"status"`
-	PaymentStatus  string `form:"payment_status"`
-	PaymentMethod  string `form:"payment_method"`
-	UserID         string `form:"user_id"`
-	Phone          string `form:"phone"`
-	Search         string `form:"search"`
-	Limit          int    `form:"limit,default=50"`
-	Offset         int    `form:"offset,default=0"`
+	Status        string `form:"status"`
+	PaymentStatus string `form:"payment_status"`
+	PaymentMethod string `form:"payment_method"`
+	UserID        string `form:"user_id"`
+	Phone         string `form:"phone"`
+	Search        string `form:"search"`
+	Limit         int    `form:"limit,default=50"`
+	Offset        int    `form:"offset,default=0"`
 }
 
 // OrdersResponse paginated orders response
@@ -173,6 +173,39 @@ type OrdersResponse struct {
 	HasMore    bool                `json:"has_more"`
 	Limit      int                 `json:"limit"`
 	Offset     int                 `json:"offset"`
+}
+
+// ============================================================================
+// ADDRESSES
+// ============================================================================
+
+// CreateAddressRequest is used to add a saved address to the user profile.
+type CreateAddressRequest struct {
+	Label       string `json:"label"`
+	FirstName   string `json:"firstName" valid:"required"`
+	LastName    string `json:"lastName" valid:"required"`
+	Phone       string `json:"phone" valid:"required"`
+	Gouvernorat string `json:"gouvernorat" valid:"required"`
+	Address     string `json:"address" valid:"required"`
+	PostalCode  string `json:"postalCode,omitempty"`
+	IsDefault   bool   `json:"isDefault"`
+}
+
+// UpdateAddressRequest is used to update a saved address.
+type UpdateAddressRequest struct {
+	Label       *string `json:"label,omitempty"`
+	FirstName   *string `json:"firstName,omitempty"`
+	LastName    *string `json:"lastName,omitempty"`
+	Phone       *string `json:"phone,omitempty"`
+	Gouvernorat *string `json:"gouvernorat,omitempty"`
+	Address     *string `json:"address,omitempty"`
+	PostalCode  *string `json:"postalCode,omitempty"`
+	IsDefault   *bool   `json:"isDefault,omitempty"`
+}
+
+// AddressesResponse lists addresses for the current user.
+type AddressesResponse struct {
+	Addresses []*interfaces.Address `json:"addresses"`
 }
 
 // ============================================================================

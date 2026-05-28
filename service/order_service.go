@@ -28,13 +28,16 @@ const (
 
 // OrderService handles order business logic
 type OrderService struct {
-	orderStore   types.OrderStore
-	productStore types.ProductStore
-	promoService *PromoService
-	userStore    types.UserStore
-	mailer       mailer.Mailer
-	frontendURL  string
-	logger       *logrus.Logger
+	orderStore     types.OrderStore
+	productStore   types.ProductStore
+	promoService   *PromoService
+	userStore      types.UserStore
+	addressService *AddressService
+	mailer         mailer.Mailer
+	mailFromName   string
+	mailFromEmail  string
+	frontendURL    string
+	logger         *logrus.Logger
 }
 
 // NewOrderService constructs an OrderService
@@ -43,21 +46,31 @@ func NewOrderService(
 	productStore types.ProductStore,
 	promoService *PromoService,
 	userStore types.UserStore,
+	addressService *AddressService,
 	m mailer.Mailer,
-	frontendURL string,
+	mailFromName, mailFromEmail, frontendURL string,
 	logger *logrus.Logger,
 ) *OrderService {
 	if logger == nil {
 		logger = logrus.New()
 	}
+	if mailFromName == "" {
+		mailFromName = "Magic"
+	}
+	if mailFromEmail == "" {
+		mailFromEmail = "noreply@magic.fr"
+	}
 	return &OrderService{
-		orderStore:   orderStore,
-		productStore: productStore,
-		promoService: promoService,
-		userStore:    userStore,
-		mailer:       m,
-		frontendURL:  frontendURL,
-		logger:       logger,
+		orderStore:     orderStore,
+		productStore:   productStore,
+		promoService:   promoService,
+		userStore:      userStore,
+		addressService: addressService,
+		mailer:         m,
+		mailFromName:   mailFromName,
+		mailFromEmail:  mailFromEmail,
+		frontendURL:    frontendURL,
+		logger:         logger,
 	}
 }
 
@@ -169,6 +182,9 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		paymentMethod = interfaces.PaymentMethodCash
 	}
 
+	shippingInfo := req.ShippingInfo
+	os.enrichShippingEmail(ctx, &shippingInfo, userID)
+
 	order := &interfaces.Order{
 		OrderNumber:    generateOrderNumber(),
 		Status:         interfaces.OrderStatusPending,
@@ -180,7 +196,7 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		PromoCode:      promoCodeStr,
 		PaymentMethod:  paymentMethod,
 		PaymentStatus:  interfaces.PaymentStatusPending,
-		ShippingInfo:   req.ShippingInfo,
+		ShippingInfo:   shippingInfo,
 		CustomerNotes:  req.CustomerNotes,
 	}
 	if userID != "" {
@@ -222,9 +238,32 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		"items":        len(items),
 	}).Info("Order created")
 
-	os.sendOrderConfirmationEmail(ctx, created)
+	if userID != "" && os.addressService != nil {
+		if err := os.addressService.SaveFromShipping(ctx, userID, shippingInfo); err != nil {
+			os.logger.WithError(err).Warn("Failed to save shipping address to user profile")
+		}
+	}
+
+	os.sendOrderConfirmationEmailAsync(created)
 
 	return created, nil
+}
+
+// enrichShippingEmail copies the account email when checkout did not include one.
+func (os *OrderService) enrichShippingEmail(ctx context.Context, shipping *interfaces.ShippingInfo, userID string) {
+	if shipping == nil || strings.TrimSpace(shipping.Email) != "" {
+		return
+	}
+	if userID == "" || os.userStore == nil {
+		return
+	}
+	user, err := os.userStore.Get(ctx, userID)
+	if err != nil || user == nil {
+		return
+	}
+	if e := strings.TrimSpace(user.Email); e != "" {
+		shipping.Email = e
+	}
 }
 
 // Get returns an order by ID

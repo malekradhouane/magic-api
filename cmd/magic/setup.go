@@ -247,10 +247,35 @@ func (rr *ResourcesRegistry) setupRepository() error {
 	return nil
 }
 
+// applyMailjetEnvOverrides fills Mailjet settings from environment variables.
+// Koanf env mapping cannot represent keys like api_key_public, so we read them explicitly.
+func applyMailjetEnvOverrides(cfg *configmanager.MailjetConfig) {
+	if v := os.Getenv("MAILJET_API_KEY_PUBLIC"); v != "" {
+		cfg.APIKeyPublic = v
+	}
+	if v := os.Getenv("MAGIC_EMAIL_MAILJET_API_KEY_PUBLIC"); v != "" {
+		cfg.APIKeyPublic = v
+	}
+	if v := os.Getenv("MAILJET_API_KEY_PRIVATE"); v != "" {
+		cfg.APIKeyPrivate = v
+	}
+	if v := os.Getenv("MAGIC_EMAIL_MAILJET_API_KEY_PRIVATE"); v != "" {
+		cfg.APIKeyPrivate = v
+	}
+	if v := os.Getenv("MAILJET_FROM_EMAIL"); v != "" {
+		cfg.FromEmail = v
+	}
+	if v := os.Getenv("MAGIC_EMAIL_MAILJET_FROM_EMAIL"); v != "" {
+		cfg.FromEmail = v
+	}
+	if v := os.Getenv("MAILJET_FROM_NAME"); v != "" {
+		cfg.FromName = v
+	}
+}
+
 func (rr *ResourcesRegistry) setupMailer() error {
 	emailConfig := rr.cman.Magic().Email
-	// Get default values from .env
-	emailConfig.Mailjet.APIKeyPrivate = os.Getenv("MAILJET_API_KEY_PRIVATE")
+	applyMailjetEnvOverrides(&emailConfig.Mailjet)
 
 	// Only setup mailer if credentials are provided
 	if emailConfig.Mailjet.APIKeyPublic == "" || emailConfig.Mailjet.APIKeyPrivate == "" {

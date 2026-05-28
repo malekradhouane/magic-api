@@ -33,7 +33,7 @@ email:
     api_key_public: "" # Set via MAGIC_EMAIL_MAILJET_API_KEY_PUBLIC env var
     api_key_private: "" # Set via MAILJET_API_KEY_PRIVATE env var
     from_name: "Magic"
-    from_email: "noreply@example.com"
+    from_email: "noreply@magic.fr" # override via MAILJET_FROM_EMAIL
 
 httpserver:
   port: 5002
