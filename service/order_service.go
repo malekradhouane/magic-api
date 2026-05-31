@@ -448,13 +448,14 @@ func orderMetadataMarkReleased(meta interfaces.JSONMap) interfaces.JSONMap {
 func (os *OrderService) reserveStockForItems(ctx context.Context, items []interfaces.OrderItem) error {
 	reserved := make([]interfaces.OrderItem, 0, len(items))
 	for _, item := range items {
-		if item.ProductID == nil || item.Size == "" {
+		if item.ProductID == nil || item.Size == "" || item.Color == "" {
 			continue
 		}
-		if err := os.productStore.DecrementSizeStock(
+		if err := os.productStore.DecrementVariantStock(
 			ctx,
 			item.ProductID.String(),
 			item.Size,
+			item.Color,
 			item.Quantity,
 		); err != nil {
 			_ = os.releaseStockForItems(ctx, reserved)
@@ -468,18 +469,20 @@ func (os *OrderService) reserveStockForItems(ctx context.Context, items []interf
 func (os *OrderService) releaseStockForItems(ctx context.Context, items []interfaces.OrderItem) error {
 	var firstErr error
 	for _, item := range items {
-		if item.ProductID == nil || item.Size == "" {
+		if item.ProductID == nil || item.Size == "" || item.Color == "" {
 			continue
 		}
-		if err := os.productStore.IncrementSizeStock(
+		if err := os.productStore.IncrementVariantStock(
 			ctx,
 			item.ProductID.String(),
 			item.Size,
+			item.Color,
 			item.Quantity,
 		); err != nil {
 			os.logger.WithError(err).WithFields(logrus.Fields{
 				"product_id": item.ProductID.String(),
 				"size":       item.Size,
+				"color":      item.Color,
 				"quantity":   item.Quantity,
 			}).Error("Failed to restore stock on order cancellation")
 			if firstErr == nil {

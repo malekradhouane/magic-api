@@ -58,9 +58,10 @@ type Product struct {
 	Metadata JSONMap `gorm:"type:jsonb" json:"metadata,omitempty"`
 
 	// Relations (loaded on demand)
-	Images []ProductImage `gorm:"foreignKey:ProductID" json:"images,omitempty"`
-	Sizes  []ProductSize  `gorm:"foreignKey:ProductID" json:"sizes,omitempty"`
-	Colors []ProductColor `gorm:"foreignKey:ProductID" json:"colors,omitempty"`
+	Images   []ProductImage   `gorm:"foreignKey:ProductID" json:"images,omitempty"`
+	Sizes    []ProductSize    `gorm:"foreignKey:ProductID" json:"sizes,omitempty"`
+	Colors   []ProductColor   `gorm:"foreignKey:ProductID" json:"colors,omitempty"`
+	Variants []ProductVariant `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
 }
 
 // TableName overrides default GORM naming
@@ -137,6 +138,29 @@ func (ProductColor) TableName() string { return "product_colors" }
 func (c *ProductColor) BeforeCreate(tx *gorm.DB) (err error) {
 	if c.ID == uuid.Nil {
 		c.ID = uuid.New()
+	}
+	return
+}
+
+// ProductVariant represents stock for a specific (size, color) combination.
+// This is the authoritative inventory unit (e.g. size M + color Noir = 20).
+type ProductVariant struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	CreatedAt time.Time `gorm:"not null;default:now()" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;default:now()" json:"updated_at"`
+	ProductID uuid.UUID `gorm:"type:uuid;not null;index" json:"product_id"`
+	Size      string    `gorm:"type:varchar(20);not null" json:"size"`
+	Color     string    `gorm:"type:varchar(100);not null" json:"color"`
+	Hex       string    `gorm:"type:varchar(7);not null;default:'#000000'" json:"hex"`
+	Stock     int       `gorm:"not null;default:0" json:"stock"`
+	Position  int       `gorm:"not null;default:0" json:"position"`
+}
+
+func (ProductVariant) TableName() string { return "product_variants" }
+
+func (v *ProductVariant) BeforeCreate(tx *gorm.DB) (err error) {
+	if v.ID == uuid.Nil {
+		v.ID = uuid.New()
 	}
 	return
 }

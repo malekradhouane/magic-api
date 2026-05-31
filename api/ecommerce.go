@@ -51,9 +51,10 @@ type CreateProductRequest struct {
 	Tags            []string                    `json:"tags"`
 	MetaTitle       string                      `json:"meta_title"`
 	MetaDescription string                      `json:"meta_description"`
-	Images          []CreateProductImageRequest `json:"images"`
-	Sizes           []CreateProductSizeRequest  `json:"sizes"`
-	Colors          []CreateProductColorRequest `json:"colors"`
+	Images          []CreateProductImageRequest   `json:"images"`
+	Sizes           []CreateProductSizeRequest    `json:"sizes"`
+	Colors          []CreateProductColorRequest   `json:"colors"`
+	Variants        []CreateProductVariantRequest `json:"variants"`
 }
 
 type CreateProductImageRequest struct {
@@ -76,6 +77,16 @@ type CreateProductColorRequest struct {
 	Position int    `json:"position"`
 }
 
+// CreateProductVariantRequest is the authoritative stock unit: stock for a
+// specific (size, color) combination.
+type CreateProductVariantRequest struct {
+	Size     string `json:"size" valid:"required"`
+	Color    string `json:"color" valid:"required"`
+	Hex      string `json:"hex"`
+	Stock    int    `json:"stock"`
+	Position int    `json:"position"`
+}
+
 // UpdateProductRequest is the full admin form payload (magic-admin always sends all fields).
 type UpdateProductRequest struct {
 	Name            string                      `json:"name" valid:"required"`
@@ -93,9 +104,10 @@ type UpdateProductRequest struct {
 	Tags            []string                    `json:"tags"`
 	MetaTitle       string                      `json:"meta_title"`
 	MetaDescription string                      `json:"meta_description"`
-	Images          []CreateProductImageRequest `json:"images"`
-	Sizes           []CreateProductSizeRequest  `json:"sizes"`
-	Colors          []CreateProductColorRequest `json:"colors"`
+	Images          []CreateProductImageRequest   `json:"images"`
+	Sizes           []CreateProductSizeRequest    `json:"sizes"`
+	Colors          []CreateProductColorRequest   `json:"colors"`
+	Variants        []CreateProductVariantRequest `json:"variants"`
 }
 
 // ============================================================================

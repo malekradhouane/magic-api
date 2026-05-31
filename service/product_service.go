@@ -85,7 +85,22 @@ func (ps *ProductService) Create(ctx context.Context, req *api.CreateProductRequ
 		})
 	}
 
-	created, err := ps.store.Create(ctx, product, images, sizes, colors)
+	variants := make([]interfaces.ProductVariant, 0, len(req.Variants))
+	for _, v := range req.Variants {
+		hex := v.Hex
+		if hex == "" {
+			hex = "#000000"
+		}
+		variants = append(variants, interfaces.ProductVariant{
+			Size:     v.Size,
+			Color:    v.Color,
+			Hex:      hex,
+			Stock:    v.Stock,
+			Position: v.Position,
+		})
+	}
+
+	created, err := ps.store.Create(ctx, product, images, sizes, colors, variants)
 	if err != nil {
 		ps.logger.WithError(err).Error("Failed to create product")
 		return nil, err
@@ -235,6 +250,24 @@ func (ps *ProductService) Update(ctx context.Context, id string, req *api.Update
 		})
 	}
 	if err := ps.store.UpsertColors(ctx, id, colors); err != nil {
+		return nil, err
+	}
+
+	variants := make([]interfaces.ProductVariant, 0, len(req.Variants))
+	for _, v := range req.Variants {
+		hex := v.Hex
+		if hex == "" {
+			hex = "#000000"
+		}
+		variants = append(variants, interfaces.ProductVariant{
+			Size:     v.Size,
+			Color:    v.Color,
+			Hex:      hex,
+			Stock:    v.Stock,
+			Position: v.Position,
+		})
+	}
+	if err := ps.store.UpsertVariants(ctx, id, variants); err != nil {
 		return nil, err
 	}
 

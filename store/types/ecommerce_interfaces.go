@@ -9,7 +9,7 @@ import (
 
 // ProductStore manages product persistence
 type ProductStore interface {
-	Create(ctx context.Context, product *interfaces.Product, images []interfaces.ProductImage, sizes []interfaces.ProductSize, colors []interfaces.ProductColor) (*interfaces.Product, error)
+	Create(ctx context.Context, product *interfaces.Product, images []interfaces.ProductImage, sizes []interfaces.ProductSize, colors []interfaces.ProductColor, variants []interfaces.ProductVariant) (*interfaces.Product, error)
 	GetByID(ctx context.Context, id string) (*interfaces.Product, error)
 	GetBySlug(ctx context.Context, slug string) (*interfaces.Product, error)
 	List(ctx context.Context, filters *api.ProductFilters) ([]*interfaces.Product, int64, error)
@@ -22,8 +22,9 @@ type ProductStore interface {
 	UpsertImages(ctx context.Context, productID string, images []interfaces.ProductImage) error
 	UpsertSizes(ctx context.Context, productID string, sizes []interfaces.ProductSize) error
 	UpsertColors(ctx context.Context, productID string, colors []interfaces.ProductColor) error
-	DecrementSizeStock(ctx context.Context, productID, size string, quantity int) error
-	IncrementSizeStock(ctx context.Context, productID, size string, quantity int) error
+	UpsertVariants(ctx context.Context, productID string, variants []interfaces.ProductVariant) error
+	DecrementVariantStock(ctx context.Context, productID, size, color string, quantity int) error
+	IncrementVariantStock(ctx context.Context, productID, size, color string, quantity int) error
 }
 
 // CategoryStore manages category persistence

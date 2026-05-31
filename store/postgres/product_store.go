@@ -45,7 +45,7 @@ func NewProductStore() (*ProductStore, error) {
 }
 
 // Create persists a product with its variants in a single transaction
-func (ps *ProductStore) Create(ctx context.Context, product *interfaces.Product, images []interfaces.ProductImage, sizes []interfaces.ProductSize, colors []interfaces.ProductColor) (*interfaces.Product, error) {
+func (ps *ProductStore) Create(ctx context.Context, product *interfaces.Product, images []interfaces.ProductImage, sizes []interfaces.ProductSize, colors []interfaces.ProductColor, variants []interfaces.ProductVariant) (*interfaces.Product, error) {
 	if product == nil {
 		return nil, fmt.Errorf("product is nil")
 	}
@@ -94,6 +94,18 @@ func (ps *ProductStore) Create(ctx context.Context, product *interfaces.Product,
 			}
 		}
 
+		for i := range variants {
+			variants[i].ProductID = product.ID
+			if variants[i].ID == uuid.Nil {
+				variants[i].ID = uuid.New()
+			}
+		}
+		if len(variants) > 0 {
+			if err := tx.Create(&variants).Error; err != nil {
+				return fmt.Errorf("failed to create product variants: %w", err)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -114,6 +126,9 @@ func (ps *ProductStore) GetByID(ctx context.Context, id string) (*interfaces.Pro
 			return db.Order("position ASC")
 		}).
 		Preload("Colors", func(db *gorm.DB) *gorm.DB {
+			return db.Order("position ASC")
+		}).
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return db.Order("position ASC")
 		}).
 		Preload("Category").
@@ -139,6 +154,9 @@ func (ps *ProductStore) GetBySlug(ctx context.Context, slug string) (*interfaces
 			return db.Order("position ASC")
 		}).
 		Preload("Colors", func(db *gorm.DB) *gorm.DB {
+			return db.Order("position ASC")
+		}).
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return db.Order("position ASC")
 		}).
 		Preload("Category").
@@ -241,6 +259,7 @@ func (ps *ProductStore) List(ctx context.Context, filters *api.ProductFilters) (
 		Preload("Images", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
 		Preload("Sizes", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
 		Preload("Colors", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
+		Preload("Variants", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
 		Preload("Category").
 		Limit(filters.Limit).
 		Offset(filters.Offset).
@@ -379,38 +398,58 @@ func (ps *ProductStore) UpsertColors(ctx context.Context, productID string, colo
 	})
 }
 
-// DecrementSizeStock atomically decrements stock for a given (product, size)
-func (ps *ProductStore) DecrementSizeStock(ctx context.Context, productID, size string, quantity int) error {
+// UpsertVariants replaces all (size, color) stock variants for a product
+func (ps *ProductStore) UpsertVariants(ctx context.Context, productID string, variants []interfaces.ProductVariant) error {
+	return withTransaction(ps.session.GetDB().WithContext(ctx), func(tx *gorm.DB) error {
+		if err := tx.Where("product_id = ?", productID).Delete(&interfaces.ProductVariant{}).Error; err != nil {
+			return fmt.Errorf("failed to clear variants: %w", err)
+		}
+		if len(variants) == 0 {
+			return nil
+		}
+		pid, err := uuid.Parse(productID)
+		if err != nil {
+			return fmt.Errorf("invalid product ID: %w", err)
+		}
+		for i := range variants {
+			variants[i].ProductID = pid
+		}
+		return tx.Create(&variants).Error
+	})
+}
+
+// DecrementVariantStock atomically decrements stock for a given (product, size, color)
+func (ps *ProductStore) DecrementVariantStock(ctx context.Context, productID, size, color string, quantity int) error {
 	if quantity <= 0 {
 		return fmt.Errorf("invalid quantity: %d", quantity)
 	}
 	res := ps.session.GetDB().WithContext(ctx).
-		Model(&interfaces.ProductSize{}).
-		Where("product_id = ? AND size = ? AND stock >= ?", productID, size, quantity).
+		Model(&interfaces.ProductVariant{}).
+		Where("product_id = ? AND size = ? AND color = ? AND stock >= ?", productID, size, color, quantity).
 		Update("stock", gorm.Expr("stock - ?", quantity))
 	if res.Error != nil {
-		return fmt.Errorf("failed to decrement size stock: %w", res.Error)
+		return fmt.Errorf("failed to decrement variant stock: %w", res.Error)
 	}
 	if res.RowsAffected == 0 {
-		return fmt.Errorf("insufficient stock for product %s size %s", productID, size)
+		return fmt.Errorf("insufficient stock for product %s size %s color %s", productID, size, color)
 	}
 	return nil
 }
 
-// IncrementSizeStock restores stock for a given (product, size) — e.g. order cancellation
-func (ps *ProductStore) IncrementSizeStock(ctx context.Context, productID, size string, quantity int) error {
+// IncrementVariantStock restores stock for a given (product, size, color) — e.g. order cancellation
+func (ps *ProductStore) IncrementVariantStock(ctx context.Context, productID, size, color string, quantity int) error {
 	if quantity <= 0 {
 		return fmt.Errorf("invalid quantity: %d", quantity)
 	}
 	res := ps.session.GetDB().WithContext(ctx).
-		Model(&interfaces.ProductSize{}).
-		Where("product_id = ? AND size = ?", productID, size).
+		Model(&interfaces.ProductVariant{}).
+		Where("product_id = ? AND size = ? AND color = ?", productID, size, color).
 		Update("stock", gorm.Expr("stock + ?", quantity))
 	if res.Error != nil {
-		return fmt.Errorf("failed to increment size stock: %w", res.Error)
+		return fmt.Errorf("failed to increment variant stock: %w", res.Error)
 	}
 	if res.RowsAffected == 0 {
-		return fmt.Errorf("size variant not found for product %s size %s", productID, size)
+		return fmt.Errorf("variant not found for product %s size %s color %s", productID, size, color)
 	}
 	return nil
 }
