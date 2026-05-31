@@ -1,0 +1,95 @@
+# ============================================================================
+# MAGIC — Phase IP (test, SANS domaine, SANS HTTPS)
+# ----------------------------------------------------------------------------
+# But : valider rapidement que l'API + PostgreSQL tournent sur le VPS,
+# accessibles via  http://<IP-du-VPS>:5002  (ou via Nginx port 80).
+#
+# ⚠️ À NE PAS utiliser pour ouvrir la boutique au public :
+#    - pas de HTTPS (trafic en clair)
+#    - API exposée directement (pas de Cloudflare devant)
+#    Quand tu auras le domaine, repasse sur docker-compose.prod.yml.
+#
+# Usage :
+#   cp .env.prod.example .env.ip   # puis remplir (BASE_URL/CORS en http://IP)
+#   docker compose -f docker-compose.ip.yml --env-file .env.ip up -d --build
+# ============================================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: magic-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Toujours interne : la DB n'est jamais exposée, même en phase test.
+    networks:
+      - magic-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  magic-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: magic-api:local
+    container_name: magic-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MODE: prod
+      ENV: production
+
+      STORAGES_POSTGRESQL_HOST: postgres
+      STORAGES_POSTGRESQL_PORT: 5432
+      STORAGES_POSTGRESQL_MAGICDB: ${POSTGRES_DB}
+      STORAGES_POSTGRESQL_MAGICLOGIN: ${POSTGRES_USER}
+      STORAGES_POSTGRESQL_MAGICPASS: ${POSTGRES_PASSWORD}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_LOGIN: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      MAGIC_PG_SSLMODE: disable
+
+      MAGIC_CUSTOMER_SECRET: ${MAGIC_CUSTOMER_SECRET}
+      GOTH_SESSION_KEY: ${GOTH_SESSION_KEY}
+
+      # En phase IP : http://<IP>  (pas de https, pas de domaine)
+      BASE_URL: ${BASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL}
+      S3_BUCKET: ${R2_BUCKET}
+      S3_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL}
+
+      MAILJET_API_KEY_PUBLIC: ${MAILJET_API_KEY_PUBLIC}
+      MAILJET_API_KEY_PRIVATE: ${MAILJET_API_KEY_PRIVATE}
+      MAILJET_FROM_NAME: ${MAILJET_FROM_NAME}
+      MAILJET_FROM_EMAIL: ${MAILJET_FROM_EMAIL}
+    # Phase IP : on expose l'API sur toutes les interfaces pour y accéder
+    # via http://<IP>:5002 depuis ton PC / Netlify (test uniquement).
+    ports:
+      - "5002:5002"
+    networks:
+      - magic-internal
+
+networks:
+  magic-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
