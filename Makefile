@@ -60,6 +60,10 @@ $(MAGIC_BIN): $(MAGIC_SOURCES)
 run: $(MAGIC_BIN)
 	@$(MAGIC_BIN)
 
+.PHONY: import-products
+import-products:
+	@$(GO) run ./cmd/importproducts --file $(or $(FILE),E26-HOMME.csv)
+
 .PHONY: tidy
 tidy:
 	$(GO) mod tidy

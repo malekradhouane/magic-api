@@ -338,21 +338,33 @@ func (rr *ResourcesRegistry) setupGinRouter() error {
 			}
 		}
 	}
+	// Allow localhost origins in addition to the configured list. This lets a
+	// local frontend talk to a remote deployment. Set CORS_ALLOW_LOCALHOST=false
+	// to disable localhost access in production.
+	allowLocalhost := strings.ToLower(strings.TrimSpace(os.Getenv("CORS_ALLOW_LOCALHOST"))) != "false"
+
 	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS", "HEAD"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
-	}
-	if len(allowedOrigins) > 0 {
-		corsConfig.AllowOrigins = allowedOrigins
-	} else {
-		// Dev fallback — never use in production
-		corsConfig.AllowOriginFunc = func(origin string) bool {
-			return strings.HasPrefix(origin, "http://localhost") ||
-				strings.HasPrefix(origin, "http://127.0.0.1")
-		}
+		// Use a single origin function so configured origins AND localhost can be
+		// accepted simultaneously. The previous if/else made them mutually
+		// exclusive, which caused OPTIONS preflight to be rejected with 403.
+		AllowOriginFunc: func(origin string) bool {
+			if allowLocalhost &&
+				(strings.HasPrefix(origin, "http://localhost") ||
+					strings.HasPrefix(origin, "http://127.0.0.1")) {
+				return true
+			}
+			for _, allowed := range allowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			return false
+		},
 	}
 	rr.http.ginEngine.Use(cors.New(corsConfig))
 
