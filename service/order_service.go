@@ -26,6 +26,12 @@ const (
 	OrderNumberPrefix = "AFR"
 )
 
+// OrderNotifier is notified when an order is created so it can push real-time
+// notifications (e.g. SSE to the admin dashboard). It is optional.
+type OrderNotifier interface {
+	NotifyNewOrder(o *interfaces.Order)
+}
+
 // OrderService handles order business logic
 type OrderService struct {
 	orderStore     types.OrderStore
@@ -38,6 +44,13 @@ type OrderService struct {
 	mailFromEmail  string
 	frontendURL    string
 	logger         *logrus.Logger
+	notifier       OrderNotifier
+}
+
+// SetNotifier wires an optional real-time notifier (kept out of the constructor
+// to avoid breaking existing call sites).
+func (os *OrderService) SetNotifier(n OrderNotifier) {
+	os.notifier = n
 }
 
 // NewOrderService constructs an OrderService
@@ -101,18 +114,19 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 			return nil, fmt.Errorf("product %s is not available", product.Name)
 		}
 
-		// Stock check on size
-		if lineReq.Size != "" {
-			ok := false
-			for _, ps := range product.Sizes {
-				if ps.Size == lineReq.Size && ps.Stock >= lineReq.Quantity {
-					ok = true
-					break
-				}
-			}
-			if !ok {
-				return nil, fmt.Errorf("insufficient stock for product %s size %s", product.Name, lineReq.Size)
-			}
+		if lineReq.Size == "" {
+			return nil, fmt.Errorf("taille requise pour le produit %s", product.Name)
+		}
+		if lineReq.Color == "" {
+			return nil, fmt.Errorf("couleur requise pour le produit %s", product.Name)
+		}
+		if !hasVariantStock(product, lineReq.Size, lineReq.Color, lineReq.Quantity) {
+			return nil, fmt.Errorf(
+				"stock insuffisant pour %s (%s / %s)",
+				product.Name,
+				lineReq.Size,
+				lineReq.Color,
+			)
 		}
 
 		lineTotal := product.Price * float64(lineReq.Quantity)
@@ -206,10 +220,13 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		}
 	}
 
-	// 5. Reserve stock (commande en attente = stock bloqué)
+	// 5. Reserve stock (commande en attente = stock bloqué sur les variants)
 	for _, item := range items {
-		if item.ProductID == nil || item.Size == "" {
-			return nil, fmt.Errorf("taille requise pour réserver le stock du produit %s", item.ProductName)
+		if item.ProductID == nil || item.Size == "" || item.Color == "" {
+			return nil, fmt.Errorf(
+				"taille et couleur requises pour réserver le stock du produit %s",
+				item.ProductName,
+			)
 		}
 	}
 	if err := os.reserveStockForItems(ctx, items); err != nil {
@@ -245,6 +262,11 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 	}
 
 	os.sendOrderConfirmationEmailAsync(created)
+
+	// Real-time push to the admin dashboard (best-effort, non-blocking).
+	if os.notifier != nil {
+		os.notifier.NotifyNewOrder(created)
+	}
 
 	return created, nil
 }
@@ -398,6 +420,17 @@ func (os *OrderService) UpdateStatus(ctx context.Context, id string, req *api.Up
 		fields["tracking_number"] = *req.TrackingNumber
 	}
 
+	// Expédition : déduire le stock si une ancienne commande n'avait pas encore été réservée
+	if req.Status != nil &&
+		*req.Status == interfaces.OrderStatusShipped &&
+		previous.Status != interfaces.OrderStatusShipped &&
+		!orderStockWasReserved(previous) {
+		if err := os.reserveStockForItems(ctx, previous.Items); err != nil {
+			return nil, fmt.Errorf("impossible de déduire le stock à l'expédition: %w", err)
+		}
+		fields["metadata"] = orderMetadataMarkReserved(previous.Metadata)
+	}
+
 	// Annulation admin : remettre le stock réservé
 	if req.Status != nil &&
 		*req.Status == interfaces.OrderStatusCancelled &&
@@ -445,11 +478,29 @@ func orderMetadataMarkReleased(meta interfaces.JSONMap) interfaces.JSONMap {
 	return m
 }
 
+func orderMetadataMarkReserved(meta interfaces.JSONMap) interfaces.JSONMap {
+	m := meta.Clone()
+	m[orderMetaStockReserved] = true
+	return m
+}
+
+func hasVariantStock(product *interfaces.Product, size, color string, quantity int) bool {
+	for _, v := range product.Variants {
+		if v.Size == size && v.Color == color {
+			return v.Stock >= quantity
+		}
+	}
+	return false
+}
+
 func (os *OrderService) reserveStockForItems(ctx context.Context, items []interfaces.OrderItem) error {
 	reserved := make([]interfaces.OrderItem, 0, len(items))
 	for _, item := range items {
 		if item.ProductID == nil || item.Size == "" || item.Color == "" {
-			continue
+			return fmt.Errorf(
+				"taille et couleur requises pour réserver le stock du produit %s",
+				item.ProductName,
+			)
 		}
 		if err := os.productStore.DecrementVariantStock(
 			ctx,

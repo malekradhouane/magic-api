@@ -291,7 +291,10 @@ func (ps *ProductStore) GetSimilar(ctx context.Context, productID string, limit 
 
 	if err := q.
 		Preload("Images", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
+		Preload("Sizes", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
 		Preload("Colors", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
+		Preload("Variants", func(d *gorm.DB) *gorm.DB { return d.Order("position ASC") }).
+		Preload("Category").
 		Order("created_at DESC").
 		Limit(limit).
 		Find(&products).Error; err != nil {
@@ -433,7 +436,7 @@ func (ps *ProductStore) DecrementVariantStock(ctx context.Context, productID, si
 	if res.RowsAffected == 0 {
 		return fmt.Errorf("insufficient stock for product %s size %s color %s", productID, size, color)
 	}
-	return nil
+	return ps.syncAggregatedStockFromVariants(ctx, productID)
 }
 
 // IncrementVariantStock restores stock for a given (product, size, color) — e.g. order cancellation
@@ -451,5 +454,78 @@ func (ps *ProductStore) IncrementVariantStock(ctx context.Context, productID, si
 	if res.RowsAffected == 0 {
 		return fmt.Errorf("variant not found for product %s size %s color %s", productID, size, color)
 	}
-	return nil
+	return ps.syncAggregatedStockFromVariants(ctx, productID)
+}
+
+// syncAggregatedStockFromVariants recalcule product_sizes / product_colors à partir
+// des variants (source de vérité pour les commandes).
+func (ps *ProductStore) syncAggregatedStockFromVariants(ctx context.Context, productID string) error {
+	db := ps.session.GetDB().WithContext(ctx)
+
+	var variants []interfaces.ProductVariant
+	if err := db.Where("product_id = ?", productID).Order("position ASC").Find(&variants).Error; err != nil {
+		return fmt.Errorf("failed to load variants for stock sync: %w", err)
+	}
+	if len(variants) == 0 {
+		return nil
+	}
+
+	sizeStock := make(map[string]int)
+	sizePos := make(map[string]int)
+	colorStock := make(map[string]int)
+	colorHex := make(map[string]string)
+	colorPos := make(map[string]int)
+	sizeOrder := make([]string, 0)
+	colorOrder := make([]string, 0)
+
+	for _, v := range variants {
+		if _, seen := sizeStock[v.Size]; !seen {
+			sizeOrder = append(sizeOrder, v.Size)
+			sizePos[v.Size] = v.Position
+		}
+		sizeStock[v.Size] += v.Stock
+
+		if _, seen := colorStock[v.Color]; !seen {
+			colorOrder = append(colorOrder, v.Color)
+			colorPos[v.Color] = v.Position
+			colorHex[v.Color] = v.Hex
+		}
+		colorStock[v.Color] += v.Stock
+	}
+
+	sizes := make([]interfaces.ProductSize, 0, len(sizeOrder))
+	for i, sz := range sizeOrder {
+		pos := sizePos[sz]
+		if pos == 0 && i > 0 {
+			pos = i
+		}
+		sizes = append(sizes, interfaces.ProductSize{
+			Size:     sz,
+			Stock:    sizeStock[sz],
+			Position: pos,
+		})
+	}
+
+	colors := make([]interfaces.ProductColor, 0, len(colorOrder))
+	for i, name := range colorOrder {
+		hex := colorHex[name]
+		if hex == "" {
+			hex = "#000000"
+		}
+		pos := colorPos[name]
+		if pos == 0 && i > 0 {
+			pos = i
+		}
+		colors = append(colors, interfaces.ProductColor{
+			Name:     name,
+			Hex:      hex,
+			Stock:    colorStock[name],
+			Position: pos,
+		})
+	}
+
+	if err := ps.UpsertSizes(ctx, productID, sizes); err != nil {
+		return err
+	}
+	return ps.UpsertColors(ctx, productID, colors)
 }

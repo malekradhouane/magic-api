@@ -22,6 +22,7 @@ type Product struct {
 	// Description
 	Description     string `gorm:"type:text" json:"description"`
 	DescriptionLong string `gorm:"type:text" json:"description_long,omitempty"`
+	Entretien       string `gorm:"type:text" json:"entretien,omitempty"`
 
 	// Pricing
 	Price           float64 `gorm:"type:numeric(10,2);not null" json:"price"`

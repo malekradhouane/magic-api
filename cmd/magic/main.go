@@ -20,6 +20,7 @@ import (
 	"github.com/malekradhouane/magic/docs"
 	"github.com/malekradhouane/magic/handler"
 	"github.com/malekradhouane/magic/middleware"
+	"github.com/malekradhouane/magic/pkg/sse"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/store"
 	"github.com/malekradhouane/magic/utils/httpresp"
@@ -141,6 +142,12 @@ func main() {
 		rr.logger,
 	)
 
+	// Real-time admin notifications (SSE). The hub fans out events to every
+	// connected admin; the order service pushes a "new_order" event on create.
+	notificationHub := sse.NewHub()
+	notificationService := service.NewNotificationService(notificationHub, rr.logger)
+	orderService.SetNotifier(notificationService)
+
 	// Sets up auth routes
 	authCtrl, err := handler.NewController(rr.cman, authMiddleware, ginJWT, authService, authLimiter)
 	if err != nil {
@@ -165,6 +172,9 @@ func main() {
 		middleware.OptionalJWTMiddleware(authMiddleware),
 	)
 	orderHandler.SetupRoutes(api)
+
+	notificationHandler := handler.NewNotificationHandler(notificationHub, authMiddleware.MiddlewareFunc())
+	notificationHandler.SetupRoutes(api)
 
 	addressHandler := handler.NewAddressHandler(addressService, authMiddleware.MiddlewareFunc())
 	addressHandler.SetupRoutes(api)

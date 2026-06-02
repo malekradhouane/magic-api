@@ -40,6 +40,7 @@ type CreateProductRequest struct {
 	SKU             *string                     `json:"sku,omitempty"`
 	Description     string                      `json:"description"`
 	DescriptionLong string                      `json:"description_long"`
+	Entretien       string                      `json:"entretien"`
 	Price           float64                     `json:"price" valid:"required"`
 	OriginalPrice   *float64                    `json:"original_price"`
 	CategoryID      *string                     `json:"category_id"`
@@ -93,6 +94,7 @@ type UpdateProductRequest struct {
 	SKU             string                      `json:"sku"`
 	Description     string                      `json:"description"`
 	DescriptionLong string                      `json:"description_long"`
+	Entretien       string                      `json:"entretien"`
 	Price           float64                     `json:"price"`
 	OriginalPrice   *float64                    `json:"original_price"`
 	CategoryID      string                      `json:"category_id"`
