@@ -2,10 +2,24 @@ package types
 
 import (
 	"context"
+	"time"
 
 	"github.com/malekradhouane/magic/api"
 	"github.com/malekradhouane/magic/pkg/interfaces"
 )
+
+// StatsStore exposes read-only aggregation queries for the admin dashboard.
+type StatsStore interface {
+	Kpis(ctx context.Context, since, prevSince, prevUntil time.Time, lowStockThreshold int) (*api.StatsKpis, error)
+	OrdersByStatus(ctx context.Context, since time.Time) ([]api.StatusCount, error)
+	RevenueByDay(ctx context.Context, since time.Time) ([]api.DayPoint, error)
+	TopGouvernorats(ctx context.Context, since time.Time, limit int) ([]api.GouvernoratStat, error)
+	StockAlerts(ctx context.Context, threshold, limit int) ([]api.StockAlert, error)
+	TopProducts(ctx context.Context, since time.Time, limit int) ([]api.ProductPerf, error)
+	Conversion(ctx context.Context, minViews, limit int) ([]api.ProductConversion, error)
+	Deadstock(ctx context.Context, days, limit int) ([]api.DeadstockProduct, error)
+	PaymentMethods(ctx context.Context, since time.Time) ([]api.PaymentMethodStat, error)
+}
 
 // ProductStore manages product persistence
 type ProductStore interface {

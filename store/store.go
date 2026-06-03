@@ -23,6 +23,7 @@ type StoreSet struct {
 	Order    types.OrderStore
 	Promo    types.PromoStore
 	Address  types.AddressStore
+	Stats    types.StatsStore
 }
 
 // CreatePostgresStores initializes all stores backed by PostgreSQL
@@ -58,6 +59,10 @@ func CreatePostgresStores(opts *Options) error {
 			err = fmt.Errorf("CreateStores: NewAddressStore err: %w", err)
 			return
 		}
+		if stores.Stats, err = postgres.NewStatsStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewStatsStore err: %w", err)
+			return
+		}
 	})
 
 	return err
@@ -80,3 +85,6 @@ func Promos() types.PromoStore { return stores.Promo }
 
 // Addresses returns the address store
 func Addresses() types.AddressStore { return stores.Address }
+
+// Stats returns the stats (dashboard aggregations) store
+func Stats() types.StatsStore { return stores.Stats }
