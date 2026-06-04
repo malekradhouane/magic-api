@@ -66,6 +66,15 @@ func (s *StatsService) Overview(ctx context.Context, days int) (*api.StatsOvervi
 		return nil
 	})
 	g.Go(func() error {
+		// 7 points (today + 6 previous days) for the KPI sparklines.
+		sp, err := s.store.Sparklines(gctx, now.AddDate(0, 0, -6))
+		if err != nil {
+			return err
+		}
+		out.Sparklines = *sp
+		return nil
+	})
+	g.Go(func() error {
 		rows, err := s.store.OrdersByStatus(gctx, since)
 		if err != nil {
 			return err

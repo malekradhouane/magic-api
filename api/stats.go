@@ -29,6 +29,10 @@ type StatsKpis struct {
 	ValidationRate   float64 `json:"validation_rate"`
 	CancellationRate float64 `json:"cancellation_rate"`
 
+	// Taux de livraison réussie (clé pour le Cash on Delivery) : parmi les
+	// commandes expédiées arrivées à un état final, part de celles livrées.
+	DeliveryRate float64 `json:"delivery_rate"`
+
 	NewCustomers int64 `json:"new_customers"`
 
 	// Alertes stock : variants sous le seuil critique et variants en rupture.
@@ -62,6 +66,7 @@ type StockAlert struct {
 	ProductID string `json:"product_id"`
 	Name      string `json:"name"`
 	Slug      string `json:"slug"`
+	Image     string `json:"image"`
 	Stock     int64  `json:"stock"`
 }
 
@@ -70,6 +75,7 @@ type ProductPerf struct {
 	ProductID string  `json:"product_id"`
 	Name      string  `json:"name"`
 	Slug      string  `json:"slug"`
+	Image     string  `json:"image"`
 	ViewCount int64   `json:"view_count"`
 	Units     int64   `json:"units"`
 	Revenue   float64 `json:"revenue"`
@@ -100,6 +106,7 @@ type DeadstockProduct struct {
 	ProductID string    `json:"product_id"`
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
+	Image     string    `json:"image"`
 	ViewCount int64     `json:"view_count"`
 	Stock     int64     `json:"stock"`
 	CreatedAt time.Time `json:"created_at"`
@@ -112,11 +119,21 @@ type PaymentMethodStat struct {
 	Revenue float64 `json:"revenue"`
 }
 
+// StatsSparklines holds short 7-day series used to fill the KPI cards with a
+// discrete trend visualization. Each array has one point per day.
+type StatsSparklines struct {
+	Orders       []float64 `json:"orders"`
+	Processed    []float64 `json:"processed"`
+	Delivered    []float64 `json:"delivered"`
+	NewCustomers []float64 `json:"new_customers"`
+}
+
 // StatsOverview is the full dashboard payload returned in a single request.
 type StatsOverview struct {
 	Days            int                 `json:"days"`
 	GeneratedAt     time.Time           `json:"generated_at"`
 	Kpis            StatsKpis           `json:"kpis"`
+	Sparklines      StatsSparklines     `json:"sparklines"`
 	OrdersByStatus  []StatusCount       `json:"orders_by_status"`
 	RevenueByDay    []DayPoint          `json:"revenue_by_day"`
 	TopGouvernorats []GouvernoratStat   `json:"top_gouvernorats"`

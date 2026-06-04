@@ -11,6 +11,7 @@ import (
 // StatsStore exposes read-only aggregation queries for the admin dashboard.
 type StatsStore interface {
 	Kpis(ctx context.Context, since, prevSince, prevUntil time.Time, lowStockThreshold int) (*api.StatsKpis, error)
+	Sparklines(ctx context.Context, since time.Time) (*api.StatsSparklines, error)
 	OrdersByStatus(ctx context.Context, since time.Time) ([]api.StatusCount, error)
 	RevenueByDay(ctx context.Context, since time.Time) ([]api.DayPoint, error)
 	TopGouvernorats(ctx context.Context, since time.Time, limit int) ([]api.GouvernoratStat, error)
