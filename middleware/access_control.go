@@ -88,3 +88,9 @@ func RequireRole(allowed ...string) gin.HandlerFunc {
 func RequireAdmin() gin.HandlerFunc {
 	return RequireRole("admin", "root", "superadmin")
 }
+
+// RequireSuperAdmin is a stricter middleware that only allows root and superadmin roles.
+// Use this for sensitive operations like creating other admins.
+func RequireSuperAdmin() gin.HandlerFunc {
+	return RequireRole("root", "superadmin")
+}

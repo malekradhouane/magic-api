@@ -48,6 +48,14 @@ func (m *MockUserStore) GetUsers(ctx context.Context) ([]*interfaces.User, error
 	}
 	return res, args.Error(1)
 }
+func (m *MockUserStore) GetUsersByRole(ctx context.Context, role string) ([]*interfaces.User, error) {
+	args := m.Called(ctx, role)
+	var res []*interfaces.User
+	if v := args.Get(0); v != nil {
+		res = v.([]*interfaces.User)
+	}
+	return res, args.Error(1)
+}
 func (m *MockUserStore) IsEmailTaken(ctx context.Context, email string) (bool, error) {
 	args := m.Called(ctx, email)
 	return args.Bool(0), args.Error(1)

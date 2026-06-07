@@ -60,6 +60,12 @@ $(MAGIC_BIN): $(MAGIC_SOURCES)
 run: $(MAGIC_BIN)
 	@$(MAGIC_BIN)
 
+.PHONY: create-admin
+create-admin:
+	@$(GO) run ./cmd/createadmin \
+		--email "$(or $(EMAIL),admin@magic.tn)" \
+		--password "$(or $(PASSWORD),admin123!)"
+
 .PHONY: import-products
 import-products:
 	@$(GO) run ./cmd/importproducts --file $(or $(FILE),E26-HOMME.csv)

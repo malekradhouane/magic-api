@@ -163,7 +163,7 @@ func main() {
 	categoryHandler := handler.NewCategoryHandler(categoryService, authMiddleware.MiddlewareFunc())
 	categoryHandler.SetupRoutes(api)
 
-	productHandler := handler.NewProductHandler(productService, authMiddleware.MiddlewareFunc())
+	productHandler := handler.NewProductHandler(productService, categoryService, authMiddleware.MiddlewareFunc())
 	productHandler.SetupRoutes(api)
 
 	orderHandler := handler.NewOrderHandler(

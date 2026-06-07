@@ -99,17 +99,23 @@ func (as *AuthService) SignUpWithPassword(ctx context.Context, req *api.SignUpRe
 		username = email
 	}
 
+	// Default role is "user" for security, but allow override if explicitly set
+	role := strings.TrimSpace(req.Role)
+	if role == "" {
+		role = "user"
+	}
+
 	user = &interfaces.User{
 		Email:     email,
 		Username:  username,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		AvatarURL: req.AvatarURL,
-		Role:      "user",
+		Role:      role,
 		CreatedAt: time.Now(),
 	}
 
-	user, err = as.userStore.CreateUser(ctx, user, "", "user")
+	user, err = as.userStore.CreateUser(ctx, user, "", role)
 	if err != nil {
 		if errors.Is(err, errs.ErrEmailTaken) {
 			return nil, errs.ErrEmailTaken

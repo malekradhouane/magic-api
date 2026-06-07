@@ -88,6 +88,15 @@ func (us *UserStore) GetUsers(ctx context.Context) ([]*interfaces.User, error) {
 	return users, nil
 }
 
+// GetUsersByRole lists users filtered by role
+func (us *UserStore) GetUsersByRole(ctx context.Context, role string) ([]*interfaces.User, error) {
+	var users []*interfaces.User
+	if err := us.session.GetDB().Where("role = ?", role).Find(&users).Error; err != nil {
+		return nil, fmt.Errorf("failed to get users by role: %w", err)
+	}
+	return users, nil
+}
+
 // IsEmailTaken returns whether an email already exists
 func (us *UserStore) IsEmailTaken(ctx context.Context, email string) (bool, error) {
 	var count int64

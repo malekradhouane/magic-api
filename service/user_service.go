@@ -176,6 +176,18 @@ func (us *UserService) GetUsers(ctx context.Context) ([]*interfaces.User, error)
 	return users, nil
 }
 
+// GetUsersByRole returns users filtered by role
+func (us *UserService) GetUsersByRole(ctx context.Context, role string) ([]*interfaces.User, error) {
+	us.logger.WithField("role", role).Debug("Fetching users by role")
+	users, err := us.userStore.GetUsersByRole(ctx, role)
+	if err != nil {
+		us.logger.WithError(err).WithField("role", role).Error("Failed to fetch users by role")
+		return nil, err
+	}
+	us.logger.WithFields(logrus.Fields{"role": role, "count": len(users)}).Debug("Fetched users by role successfully")
+	return users, nil
+}
+
 func (us *UserService) DeleteUser(ctx context.Context, id string) error {
 	us.logger.WithField("id", id).Info("Attempting to delete user")
 

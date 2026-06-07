@@ -8,14 +8,14 @@ definitions:
         type: string
       is_active:
         type: boolean
+      metadata:
+        $ref: '#/definitions/interfaces.JSONMap'
       name:
         type: string
       parent_id:
         type: string
       position:
         type: integer
-      slug:
-        type: string
     type: object
   api.CreateOrderItemRequest:
     properties:
@@ -77,6 +77,10 @@ definitions:
         type: string
       description_long:
         type: string
+      entretien:
+        type: string
+      gender:
+        type: string
       images:
         items:
           $ref: '#/definitions/api.CreateProductImageRequest'
@@ -105,15 +109,30 @@ definitions:
         type: array
       sku:
         type: string
-      slug:
-        type: string
       tags:
         items:
           type: string
         type: array
+      variants:
+        items:
+          $ref: '#/definitions/api.CreateProductVariantRequest'
+        type: array
     type: object
   api.CreateProductSizeRequest:
     properties:
+      position:
+        type: integer
+      size:
+        type: string
+      stock:
+        type: integer
+    type: object
+  api.CreateProductVariantRequest:
+    properties:
+      color:
+        type: string
+      hex:
+        type: string
       position:
         type: integer
       size:
@@ -147,6 +166,42 @@ definitions:
       usage_limit:
         type: integer
     type: object
+  api.DayPoint:
+    properties:
+      day:
+        description: YYYY-MM-DD
+        type: string
+      orders:
+        type: integer
+      revenue:
+        type: number
+    type: object
+  api.DeadstockProduct:
+    properties:
+      created_at:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      product_id:
+        type: string
+      slug:
+        type: string
+      stock:
+        type: integer
+      view_count:
+        type: integer
+    type: object
+  api.GouvernoratStat:
+    properties:
+      gouvernorat:
+        type: string
+      orders:
+        type: integer
+      revenue:
+        type: number
+    type: object
   api.OrderResponse:
     properties:
       order:
@@ -169,6 +224,54 @@ definitions:
           $ref: '#/definitions/interfaces.Order'
         type: array
       total_count:
+        type: integer
+    type: object
+  api.PaymentMethodStat:
+    properties:
+      count:
+        type: integer
+      method:
+        type: string
+      revenue:
+        type: number
+    type: object
+  api.ProductConversion:
+    properties:
+      conversion_rate:
+        description: (units / view_count) * 100
+        type: number
+      is_featured:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      product_id:
+        type: string
+      recommendation:
+        type: string
+      slug:
+        type: string
+      units:
+        type: integer
+      view_count:
+        type: integer
+    type: object
+  api.ProductPerf:
+    properties:
+      image:
+        type: string
+      name:
+        type: string
+      product_id:
+        type: string
+      revenue:
+        type: number
+      slug:
+        type: string
+      units:
+        type: integer
+      view_count:
         type: integer
     type: object
   api.ProductsResponse:
@@ -212,10 +315,137 @@ definitions:
         type: string
       providerID:
         type: string
-      role:
-        type: string
       username:
         type: string
+    type: object
+  api.StatsKpis:
+    properties:
+      avg_order_value:
+        description: Panier moyen sur la période.
+        type: number
+      cancellation_rate:
+        type: number
+      delivery_rate:
+        description: |-
+          Taux de livraison réussie (clé pour le Cash on Delivery) : parmi les
+          commandes expédiées arrivées à un état final, part de celles livrées.
+        type: number
+      low_stock_count:
+        description: 'Alertes stock : variants sous le seuil critique et variants
+          en rupture.'
+        type: integer
+      new_customers:
+        type: integer
+      orders:
+        type: integer
+      orders_prev:
+        type: integer
+      orders_trend:
+        type: number
+      out_of_stock_count:
+        type: integer
+      pending_orders:
+        description: Commandes en attente de traitement (status = pending), tous temps
+          confondus.
+        type: integer
+      revenue:
+        description: |-
+          Chiffre d'affaire (commandes non annulées) sur la période + tendance vs
+          période précédente de même durée.
+        type: number
+      revenue_prev:
+        type: number
+      revenue_trend:
+        type: number
+      validation_rate:
+        description: |-
+          Ratio de validation : part des commandes traitées (confirmées / expédiées /
+          livrées) parmi celles qui ont quitté l'état "en attente" (traitées + annulées).
+        type: number
+    type: object
+  api.StatsOverview:
+    properties:
+      conversion:
+        items:
+          $ref: '#/definitions/api.ProductConversion'
+        type: array
+      days:
+        type: integer
+      deadstock:
+        items:
+          $ref: '#/definitions/api.DeadstockProduct'
+        type: array
+      generated_at:
+        type: string
+      kpis:
+        $ref: '#/definitions/api.StatsKpis'
+      orders_by_status:
+        items:
+          $ref: '#/definitions/api.StatusCount'
+        type: array
+      payment_methods:
+        items:
+          $ref: '#/definitions/api.PaymentMethodStat'
+        type: array
+      revenue_by_day:
+        items:
+          $ref: '#/definitions/api.DayPoint'
+        type: array
+      sparklines:
+        $ref: '#/definitions/api.StatsSparklines'
+      stock_alerts:
+        items:
+          $ref: '#/definitions/api.StockAlert'
+        type: array
+      top_gouvernorats:
+        items:
+          $ref: '#/definitions/api.GouvernoratStat'
+        type: array
+      top_products:
+        items:
+          $ref: '#/definitions/api.ProductPerf'
+        type: array
+    type: object
+  api.StatsSparklines:
+    properties:
+      delivered:
+        items:
+          type: number
+        type: array
+      new_customers:
+        items:
+          type: number
+        type: array
+      orders:
+        items:
+          type: number
+        type: array
+      processed:
+        items:
+          type: number
+        type: array
+    type: object
+  api.StatusCount:
+    properties:
+      count:
+        type: integer
+      revenue:
+        type: number
+      status:
+        type: string
+    type: object
+  api.StockAlert:
+    properties:
+      image:
+        type: string
+      name:
+        type: string
+      product_id:
+        type: string
+      slug:
+        type: string
+      stock:
+        type: integer
     type: object
   api.UpdateCategoryRequest:
     properties:
@@ -225,6 +455,8 @@ definitions:
         type: string
       is_active:
         type: boolean
+      metadata:
+        $ref: '#/definitions/interfaces.JSONMap'
       name:
         type: string
       parent_id:
@@ -245,10 +477,22 @@ definitions:
     properties:
       category_id:
         type: string
+      colors:
+        items:
+          $ref: '#/definitions/api.CreateProductColorRequest'
+        type: array
       description:
         type: string
       description_long:
         type: string
+      entretien:
+        type: string
+      gender:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/api.CreateProductImageRequest'
+        type: array
       is_active:
         type: boolean
       is_featured:
@@ -257,15 +501,29 @@ definitions:
         type: boolean
       is_on_sale:
         type: boolean
+      meta_description:
+        type: string
+      meta_title:
+        type: string
       name:
         type: string
       original_price:
         type: number
       price:
         type: number
+      sizes:
+        items:
+          $ref: '#/definitions/api.CreateProductSizeRequest'
+        type: array
+      sku:
+        type: string
       tags:
         items:
           type: string
+        type: array
+      variants:
+        items:
+          $ref: '#/definitions/api.CreateProductVariantRequest'
         type: array
     type: object
   api.UpdateUserRequest:
@@ -320,6 +578,21 @@ definitions:
   gin.H:
     additionalProperties: {}
     type: object
+  handler.PresignUploadRequest:
+    properties:
+      content_type:
+        type: string
+      filename:
+        type: string
+      folder:
+        description: |-
+          Folder is an optional logical prefix (e.g. "products", "categories").
+          Defaults to "uploads".
+        type: string
+    required:
+    - content_type
+    - filename
+    type: object
   httpresp.HTTPError:
     properties:
       code:
@@ -365,6 +638,12 @@ definitions:
     type: object
   interfaces.Category:
     properties:
+      children:
+        description: Children holds direct sub-categories when the tree is loaded
+          (parents only).
+        items:
+          $ref: '#/definitions/interfaces.Category'
+        type: array
       created_at:
         type: string
       description:
@@ -376,8 +655,7 @@ definitions:
       is_active:
         type: boolean
       metadata:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/interfaces.JSONMap'
       name:
         type: string
       parent_id:
@@ -397,6 +675,9 @@ definitions:
       username:
         example: "042"
         type: string
+    type: object
+  interfaces.JSONMap:
+    additionalProperties: true
     type: object
   interfaces.Order:
     properties:
@@ -419,8 +700,7 @@ definitions:
           $ref: '#/definitions/interfaces.OrderItem'
         type: array
       metadata:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/interfaces.JSONMap'
       order_number:
         type: string
       payment_method:
@@ -500,6 +780,13 @@ definitions:
       discount_percent:
         description: computed column, read-only
         type: integer
+      entretien:
+        type: string
+      gender:
+        description: |-
+          Gender / audience dimension (homme | femme | enfant | unisexe), independent
+          from the product-type category tree.
+        type: string
       id:
         type: string
       images:
@@ -522,9 +809,9 @@ definitions:
         description: SEO
         type: string
       metadata:
-        additionalProperties: true
+        allOf:
+        - $ref: '#/definitions/interfaces.JSONMap'
         description: Metadata
-        type: object
       name:
         type: string
       original_price:
@@ -550,6 +837,10 @@ definitions:
         type: array
       updated_at:
         type: string
+      variants:
+        items:
+          $ref: '#/definitions/interfaces.ProductVariant'
+        type: array
       view_count:
         description: Stats
         type: integer
@@ -593,6 +884,27 @@ definitions:
   interfaces.ProductSize:
     properties:
       created_at:
+        type: string
+      id:
+        type: string
+      position:
+        type: integer
+      product_id:
+        type: string
+      size:
+        type: string
+      stock:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  interfaces.ProductVariant:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      hex:
         type: string
       id:
         type: string
@@ -729,6 +1041,50 @@ definitions:
       username:
         description: User profile
         type: string
+    type: object
+  r2.PresignedUpload:
+    properties:
+      content_type:
+        type: string
+      expires_in:
+        type: integer
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      key:
+        type: string
+      method:
+        type: string
+      public_url:
+        type: string
+      upload_url:
+        type: string
+    type: object
+  service.ImportError:
+    properties:
+      error:
+        type: string
+      name:
+        type: string
+      sku:
+        type: string
+    type: object
+  service.ImportResult:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/service.ImportError'
+        type: array
+      products_created:
+        type: integer
+      products_failed:
+        type: integer
+      products_skipped:
+        description: déjà présents (slug existant)
+        type: integer
+      variants_created:
+        type: integer
     type: object
 host: localhost:5001
 info:
@@ -880,6 +1236,28 @@ paths:
       summary: Delete promo code (admin)
       tags:
       - promo
+  /admin/stats/overview:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Lookback window in days (default 30, max 365)
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.StatsOverview'
+      summary: Dashboard overview (admin)
+      tags:
+      - stats
   /authenticate:
     post:
       consumes:
@@ -1314,6 +1692,66 @@ paths:
       summary: Get similar products
       tags:
       - products
+  /products/id/{id}:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Product ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interfaces.Product'
+      summary: Get product by ID (admin)
+      tags:
+      - products
+  /products/import:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: CSV file to import
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Gender for logging
+        in: formData
+        name: gender
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.ImportResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpresp.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresp.HTTPError'
+      summary: Import products from CSV
+      tags:
+      - products
   /promo/validate:
     post:
       consumes:
@@ -1411,6 +1849,32 @@ paths:
       summary: Service status
       tags:
       - status
+  /uploads/presign:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Upload metadata
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PresignUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/r2.PresignedUpload'
+      summary: Generate a presigned upload URL for R2
+      tags:
+      - uploads
   /users:
     get:
       consumes:
@@ -1581,6 +2045,98 @@ paths:
           schema:
             $ref: '#/definitions/httpresp.HTTPError'
       summary: Update a user
+      tags:
+      - users
+  /users/admins:
+    get:
+      consumes:
+      - application/json
+      description: Get all users with admin, root or superadmin role
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of admin users
+          schema:
+            items:
+              $ref: '#/definitions/interfaces.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresp.HTTPError'
+      summary: Get admin users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with admin role (admin-only)
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Admin user information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/api.SignUpRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Admin user created
+          schema:
+            $ref: '#/definitions/interfaces.User'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/gin.H'
+        "409":
+          description: Email already in use
+          schema:
+            $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Create an admin user
+      tags:
+      - users
+  /users/customers:
+    get:
+      consumes:
+      - application/json
+      description: Get all users with the user role (customers)
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of customers
+          schema:
+            items:
+              $ref: '#/definitions/interfaces.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresp.HTTPError'
+      summary: Get customer users
       tags:
       - users
 securityDefinitions:

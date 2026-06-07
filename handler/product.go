@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
@@ -17,13 +18,14 @@ import (
 
 // ProductHandler exposes product endpoints
 type ProductHandler struct {
-	service *service.ProductService
-	auth    gin.HandlerFunc
+	service    *service.ProductService
+	categories *service.CategoryService
+	auth       gin.HandlerFunc
 }
 
 // NewProductHandler constructs a ProductHandler
-func NewProductHandler(s *service.ProductService, auth gin.HandlerFunc) *ProductHandler {
-	return &ProductHandler{service: s, auth: auth}
+func NewProductHandler(s *service.ProductService, categories *service.CategoryService, auth gin.HandlerFunc) *ProductHandler {
+	return &ProductHandler{service: s, categories: categories, auth: auth}
 }
 
 // SetupRoutes registers product routes
@@ -38,6 +40,7 @@ func NewProductHandler(s *service.ProductService, auth gin.HandlerFunc) *Product
 //	POST   /products
 //	PATCH  /products/:id
 //	DELETE /products/:id
+//	POST   /products/import
 func (h *ProductHandler) SetupRoutes(g *gin.RouterGroup) {
 	pub := g.Group("/products")
 	pub.GET("", h.List)
@@ -51,6 +54,7 @@ func (h *ProductHandler) SetupRoutes(g *gin.RouterGroup) {
 	admin.GET("/id/:id", h.GetByIDAdmin)
 	admin.PATCH("/:id", h.Update)
 	admin.DELETE("/:id", h.Delete)
+	admin.POST("/import", h.ImportProducts)
 }
 
 // List returns paginated, filtered products
@@ -234,4 +238,61 @@ func (h *ProductHandler) Delete(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// ImportProducts imports products from a CSV file (admin)
+// @Summary Import products from CSV
+// @Tags products
+// @Accept multipart/form-data
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param file formData file true "CSV file to import"
+// @Param gender formData string false "Gender for logging"
+// @Success 200 {object} service.ImportResult
+// @Failure 400 {object} httpresp.HTTPError
+// @Failure 500 {object} httpresp.HTTPError
+// @Router /products/import [post]
+func (h *ProductHandler) ImportProducts(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, "file upload required: "+err.Error())
+		return
+	}
+	defer file.Close()
+
+	// Validate file extension
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".csv") {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, "file must be a CSV file")
+		return
+	}
+
+	gender := c.PostForm("gender")
+	if gender == "" {
+		gender = "homme" // default gender
+	}
+
+	// Create product importer
+	importer := service.NewProductImporter(h.service, h.categories, nil)
+
+	// Import from uploaded file
+	result, err := importer.ImportFromCSV(c.Request.Context(), file)
+	if err != nil {
+		httpresp.NewErrorMessage(c, http.StatusInternalServerError, "import failed: "+err.Error())
+		return
+	}
+
+	// Log the import result
+	if result.ProductsFailed > 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"result":  result,
+			"message": "Import completed with errors",
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"result":  result,
+			"message": "Import completed successfully",
+		})
+	}
 }

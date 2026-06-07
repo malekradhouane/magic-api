@@ -42,42 +42,60 @@ l'IP du VPS** pour valider que tout fonctionne, puis brancher le domaine après.
 | | Phase IP (maintenant) | Avec domaine (plus tard) |
 |---|---|---|
 | API Go + PostgreSQL | ✅ `http://<IP>:5002` | ✅ `https://api.domaine.tn` |
+| Boutique (front) | ✅ `http://<IP>:8080` | Cloudflare Pages + domaine |
+| Admin | ✅ `http://<IP>:8081` | Cloudflare Pages + domaine |
 | Migrations DB, stock, commandes | ✅ | ✅ |
 | HTTPS / SSL | ❌ (HTTP en clair) | ✅ Let's Encrypt + Cloudflare |
 | Cloudflare (DDoS/WAF/IP cachée) | ❌ | ✅ |
-| Fronts | en local, **ou Netlify** | Netlify / Cloudflare Pages + domaine |
+| Fronts | ✅ Docker sur le VPS | Netlify / Cloudflare Pages + domaine |
 
 > ⚠️ La phase IP sert à **tester**, pas à ouvrir la boutique au public
 > (pas de HTTPS = navigateurs "Non sécurisé", login/paiement en clair).
 > Mets le domaine **avant** l'ouverture réelle.
 
 ### Fichiers dédiés à la phase IP
-- `docker-compose.ip.yml` — API exposée en HTTP sur le VPS (port 5002)
+- `docker-compose.ip.yml` — API + PostgreSQL + front + admin (HTTP sur le VPS)
 - `.env.ip.example` — variables avec `http://<IP>` au lieu du domaine
-- `nginx/magic-api-ip.conf` — (optionnel) proxy HTTP port 80
+- `nginx/magic-api-ip.conf` — (optionnel) proxy HTTP port 80 vers l'API
+- `nginx/magic-front-ip.conf` — nginx du conteneur boutique (CSP phase IP)
+- `nginx/magic-admin-ip.conf` — nginx du conteneur admin (CSP phase IP)
 
 ### Procédure phase IP
 1. **Crée et sécurise le VPS** : suis *Étape 1* et *Étape 2* ci-dessous
    (Hetzner + `01-server-setup.sh`). Tout ça est identique avec ou sans domaine.
-2. **Ouvre le port de l'API dans le firewall** (juste pour la phase test) :
+2. **Ouvre les ports dans le firewall** (juste pour la phase test) :
    ```bash
-   sudo ufw allow 5002/tcp
+   sudo ufw allow 5002/tcp   # API
+   sudo ufw allow 8080/tcp   # boutique
+   sudo ufw allow 8081/tcp   # admin
    ```
-3. **Lance l'API + DB** :
+3. **Lance la stack complète** (API + DB + fronts) :
    ```bash
    git clone <ton-repo> ~/MAGIC
    cd ~/MAGIC/magic-api/deploy
    cp .env.ip.example .env.ip
    nano .env.ip            # remplir secrets + remplacer <IP> par l'IP du VPS
    docker compose -f docker-compose.ip.yml --env-file .env.ip up -d --build
-   docker compose -f docker-compose.ip.yml --env-file .env.ip logs -f magic-api
+   docker compose -f docker-compose.ip.yml --env-file .env.ip logs -f
    ```
-4. **Teste** depuis ton PC : `curl http://<IP>:5002/health` (ou un endpoint connu).
+4. **Teste** depuis ton PC :
+   - API : `curl http://<IP>:5002/health`
+   - Boutique : `http://<IP>:8080`
+   - Admin : `http://<IP>:8081`
+
+> **Note** : les URLs `NUXT_PUBLIC_*` sont injectées au **build** Docker. Si tu
+> changes l'IP ou l'URL de l'API, relance avec `--build` pour reconstruire les fronts.
 
 ### Tester les fronts pendant la phase IP
 
-**Option A — Fronts en local (le plus simple pour "juste tester")**
-Sur ton PC, pointe les fronts vers l'API du VPS et lance-les :
+**Option A — Fronts sur le VPS (recommandé, inclus dans docker-compose.ip.yml)**
+Tout tourne sur le serveur ; pas de mixed content car tout est en HTTP :
+- Boutique → `http://<IP>:8080`
+- Admin → `http://<IP>:8081`
+- API → `http://<IP>:5002`
+
+**Option B — Fronts en local sur ton PC**
+Sur ton PC, pointe les fronts vers l'API du VPS :
 ```bash
 # magic-front
 cd magic-front
@@ -90,8 +108,9 @@ echo "NUXT_PUBLIC_API_BASE_URL=http://<IP>:5002" > .env
 npm install && npm run dev          # http://localhost:3001
 ```
 Pas de problème de "mixed content" car localhost est traité comme sécurisé.
+Ajoute `http://localhost:3000,http://localhost:3001` dans `CORS_ALLOWED_ORIGINS`.
 
-**Option B — Fronts sur Netlify (sous-domaine HTTPS gratuit)**
+**Option C — Fronts sur Netlify (sous-domaine HTTPS gratuit)**
 Netlify héberge tes fronts statiques gratuitement avec une URL
 `https://xxx.netlify.app` en HTTPS — **sans que tu aies de domaine**.
 - New site → import depuis GitHub
@@ -104,14 +123,16 @@ Netlify héberge tes fronts statiques gratuitement avec une URL
 > ⚠️ **Piège HTTPS→HTTP** : un front Netlify (HTTPS) qui appelle une API en
 > `http://<IP>` sera **bloqué par le navigateur** (mixed content). Pour utiliser
 > Netlify réellement, il faut une API en HTTPS → c'est le moment de prendre le
-> domaine + Cloudflare. Pour du pur test, préfère l'**Option A (local)**.
+> domaine + Cloudflare. Pour du pur test, préfère l'**Option A (VPS)** ou **Option B (local)**.
 
 ### Passer de la phase IP au domaine (plus tard)
 Quand tu achètes le domaine, la migration est rapide :
 1. Ajoute le domaine dans **Cloudflare**, crée l'enregistrement `A api → <IP>` (proxy ON).
 2. Sur le VPS :
    ```bash
-   sudo ufw delete allow 5002/tcp          # referme le port de test
+   sudo ufw delete allow 5002/tcp          # referme les ports de test
+   sudo ufw delete allow 8080/tcp
+   sudo ufw delete allow 8081/tcp
    docker compose -f docker-compose.ip.yml --env-file .env.ip down
    cp .env.ip .env.prod                    # puis adapte BASE_URL/CORS en https://…
    nano .env.prod

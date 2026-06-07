@@ -36,22 +36,22 @@ type ProductsResponse struct {
 
 // CreateProductRequest is used by admins to create a product
 type CreateProductRequest struct {
-	Name            string                      `json:"name" valid:"required"`
-	SKU             *string                     `json:"sku,omitempty"`
-	Description     string                      `json:"description"`
-	DescriptionLong string                      `json:"description_long"`
-	Entretien       string                      `json:"entretien"`
-	Price           float64                     `json:"price" valid:"required"`
-	OriginalPrice   *float64                    `json:"original_price"`
-	CategoryID      *string                     `json:"category_id"`
-	Gender          string                      `json:"gender"`
-	IsNew           bool                        `json:"is_new"`
-	IsOnSale        bool                        `json:"is_on_sale"`
-	IsActive        bool                        `json:"is_active"`
-	IsFeatured      bool                        `json:"is_featured"`
-	Tags            []string                    `json:"tags"`
-	MetaTitle       string                      `json:"meta_title"`
-	MetaDescription string                      `json:"meta_description"`
+	Name            string                        `json:"name" valid:"required"`
+	SKU             *string                       `json:"sku,omitempty"`
+	Description     string                        `json:"description"`
+	DescriptionLong string                        `json:"description_long"`
+	Entretien       string                        `json:"entretien"`
+	Price           float64                       `json:"price" valid:"required"`
+	OriginalPrice   *float64                      `json:"original_price"`
+	CategoryID      *string                       `json:"category_id"`
+	Gender          string                        `json:"gender"`
+	IsNew           bool                          `json:"is_new"`
+	IsOnSale        bool                          `json:"is_on_sale"`
+	IsActive        bool                          `json:"is_active"`
+	IsFeatured      bool                          `json:"is_featured"`
+	Tags            []string                      `json:"tags"`
+	MetaTitle       string                        `json:"meta_title"`
+	MetaDescription string                        `json:"meta_description"`
 	Images          []CreateProductImageRequest   `json:"images"`
 	Sizes           []CreateProductSizeRequest    `json:"sizes"`
 	Colors          []CreateProductColorRequest   `json:"colors"`
@@ -90,22 +90,22 @@ type CreateProductVariantRequest struct {
 
 // UpdateProductRequest is the full admin form payload (magic-admin always sends all fields).
 type UpdateProductRequest struct {
-	Name            string                      `json:"name" valid:"required"`
-	SKU             string                      `json:"sku"`
-	Description     string                      `json:"description"`
-	DescriptionLong string                      `json:"description_long"`
-	Entretien       string                      `json:"entretien"`
-	Price           float64                     `json:"price"`
-	OriginalPrice   *float64                    `json:"original_price"`
-	CategoryID      string                      `json:"category_id"`
-	Gender          string                      `json:"gender"`
-	IsNew           bool                        `json:"is_new"`
-	IsOnSale        bool                        `json:"is_on_sale"`
-	IsActive        bool                        `json:"is_active"`
-	IsFeatured      bool                        `json:"is_featured"`
-	Tags            []string                    `json:"tags"`
-	MetaTitle       string                      `json:"meta_title"`
-	MetaDescription string                      `json:"meta_description"`
+	Name            string                        `json:"name" valid:"required"`
+	SKU             string                        `json:"sku"`
+	Description     string                        `json:"description"`
+	DescriptionLong string                        `json:"description_long"`
+	Entretien       string                        `json:"entretien"`
+	Price           float64                       `json:"price"`
+	OriginalPrice   *float64                      `json:"original_price"`
+	CategoryID      string                        `json:"category_id"`
+	Gender          string                        `json:"gender"`
+	IsNew           bool                          `json:"is_new"`
+	IsOnSale        bool                          `json:"is_on_sale"`
+	IsActive        bool                          `json:"is_active"`
+	IsFeatured      bool                          `json:"is_featured"`
+	Tags            []string                      `json:"tags"`
+	MetaTitle       string                        `json:"meta_title"`
+	MetaDescription string                        `json:"meta_description"`
 	Images          []CreateProductImageRequest   `json:"images"`
 	Sizes           []CreateProductSizeRequest    `json:"sizes"`
 	Colors          []CreateProductColorRequest   `json:"colors"`
@@ -259,4 +259,14 @@ type CreatePromoRequest struct {
 	StartsAt      *string  `json:"starts_at,omitempty"`
 	ExpiresAt     *string  `json:"expires_at,omitempty"`
 	IsActive      bool     `json:"is_active"`
+}
+
+// ============================================================================
+// PRODUCT IMPORT
+// ============================================================================
+
+// ImportProductsRequest is used to import products from a CSV file
+type ImportProductsRequest struct {
+	File   string `form:"file" binding:"required"` // CSV file path or identifier
+	Gender string `form:"gender"`                  // Optional gender for logging
 }

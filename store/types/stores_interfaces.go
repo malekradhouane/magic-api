@@ -20,6 +20,7 @@ type UserStore interface {
 	Get(context.Context, string) (*interfaces.User, error)
 	GetUserByEmail(context.Context, string) (*interfaces.User, error)
 	GetUsers(context.Context) ([]*interfaces.User, error)
+	GetUsersByRole(ctx context.Context, role string) ([]*interfaces.User, error)
 	IsEmailTaken(context.Context, string) (bool, error)
 	Authenticate(context.Context, *interfaces.Credential) (*interfaces.User, error)
 	FindByEmailAndProvider(context.Context, string, string) (*interfaces.User, error)
