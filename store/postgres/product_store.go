@@ -228,6 +228,19 @@ func (ps *ProductStore) List(ctx context.Context, filters *api.ProductFilters) (
 		db = db.Where("EXISTS (SELECT 1 FROM product_colors pc WHERE pc.product_id = products.id AND pc.name IN ? AND pc.stock > 0)", filters.Colors)
 	}
 
+	// Stock status filter: matches individual variant stock levels (threshold = 5).
+	const lowStockThreshold = 5
+	switch filters.StockStatus {
+	case "out":
+		db = db.Where("EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = products.id AND pv.stock = 0)")
+	case "low":
+		db = db.Where("EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = products.id AND pv.stock > 0 AND pv.stock <= ?)", lowStockThreshold)
+	case "low_or_out":
+		db = db.Where("EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = products.id AND pv.stock <= ?)", lowStockThreshold)
+	case "in":
+		db = db.Where("NOT EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = products.id AND pv.stock <= ?)", lowStockThreshold)
+	}
+
 	if filters.Search != "" {
 		searchPattern := "%" + strings.ToLower(filters.Search) + "%"
 		db = db.Where(

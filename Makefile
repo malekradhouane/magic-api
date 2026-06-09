@@ -63,8 +63,8 @@ run: $(MAGIC_BIN)
 .PHONY: create-admin
 create-admin:
 	@$(GO) run ./cmd/createadmin \
-		--email "$(or $(EMAIL),admin@magic.tn)" \
-		--password "$(or $(PASSWORD),admin123!)"
+		--email "$(or $(EMAIL),malek.radhouen@gmail.com)" \
+		--password "$(or $(PASSWORD),Malek@123)"
 
 .PHONY: import-products
 import-products:

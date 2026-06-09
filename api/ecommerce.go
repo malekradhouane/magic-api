@@ -10,19 +10,20 @@ import (
 
 // ProductFilters represents query filters for product listings
 type ProductFilters struct {
-	Category   string   `form:"category"`
-	Gender     string   `form:"gender"`
-	Sizes      []string `form:"sizes"`
-	Colors     []string `form:"colors"`
-	MinPrice   *float64 `form:"min_price"`
-	MaxPrice   *float64 `form:"max_price"`
-	IsNew      *bool    `form:"is_new"`
-	IsOnSale   *bool    `form:"is_on_sale"`
-	IsFeatured *bool    `form:"is_featured"`
-	Sort       string   `form:"sort"` // relevance | newest | price-asc | price-desc
-	Search     string   `form:"search"`
-	Limit      int      `form:"limit,default=20"`
-	Offset     int      `form:"offset,default=0"`
+	Category    string   `form:"category"`
+	Gender      string   `form:"gender"`
+	Sizes       []string `form:"sizes"`
+	Colors      []string `form:"colors"`
+	MinPrice    *float64 `form:"min_price"`
+	MaxPrice    *float64 `form:"max_price"`
+	IsNew       *bool    `form:"is_new"`
+	IsOnSale    *bool    `form:"is_on_sale"`
+	IsFeatured  *bool    `form:"is_featured"`
+	StockStatus string   `form:"stock_status"` // all | in | low | out | low_or_out
+	Sort        string   `form:"sort"`         // relevance | newest | price-asc | price-desc
+	Search      string   `form:"search"`
+	Limit       int      `form:"limit,default=20"`
+	Offset      int      `form:"offset,default=0"`
 }
 
 // ProductsResponse is the paginated products response
