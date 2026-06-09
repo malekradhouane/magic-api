@@ -146,11 +146,11 @@ func (as *AuthService) SignUpWithPassword(ctx context.Context, req *api.SignUpRe
 		if err != nil {
 			as.logger.WithError(err).Warn("Failed to generate activation token")
 		} else {
-			baseURL := os.Getenv("BASE_URL")
-			if baseURL == "" {
-				baseURL = "http://localhost:5002"
+			frontendURL := os.Getenv("FRONTEND_URL")
+			if frontendURL == "" {
+				frontendURL = "http://localhost:3000"
 			}
-			activationLink := fmt.Sprintf("%s/api/activate/%s", baseURL, token)
+			activationLink := fmt.Sprintf("%s/activate-email?token=%s", frontendURL, token)
 			if err := as.SendActivationEmail(ctx, user, activationLink); err != nil {
 				as.logger.WithError(err).Error("Failed to send activation email")
 			}

@@ -338,7 +338,11 @@ func (ctrl *controller) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	err := ctrl.authService.RequestPasswordReset(c.Request.Context(), req.Email, ctrl.cman.Magic().BaseURL)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	err := ctrl.authService.RequestPasswordReset(c.Request.Context(), req.Email, frontendURL)
 	if err != nil {
 		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
 		return
