@@ -123,8 +123,8 @@ func TestUserService_Create_Success(t *testing.T) {
 	email := "ok@example.com"
 	mus.On("IsEmailTaken", mock.Anything, email).Return(false, nil)
 	userID := uuid.New()
-	// UserService.Create passes empty strings for companyID and role
-	mus.On("CreateUser", mock.Anything, mock.AnythingOfType("*interfaces.User"), "", "").Return(&interfaces.User{ID: userID, Email: email}, nil)
+	// UserService.Create passes empty companyID and "user" role
+	mus.On("CreateUser", mock.Anything, mock.AnythingOfType("*interfaces.User"), "", "user").Return(&interfaces.User{ID: userID, Email: email}, nil)
 
 	res, err := svc.Create(context.Background(), &api.SignUpRequest{Email: email, Password: "pwd", Role: "user"})
 	assert.NoError(t, err)
@@ -171,4 +171,301 @@ func TestUserService_UpdateUserFields_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uid, res.ID)
 	mus.AssertExpectations(t)
+}
+
+// Test: Create email already taken
+func TestUserService_Create_EmailTaken(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("IsEmailTaken", mock.Anything, "taken@example.com").Return(true, nil)
+
+	_, err := svc.Create(context.Background(), &api.SignUpRequest{
+		Email: "TAKEN@example.com", Password: "password",
+	})
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, errs.ErrEmailTaken))
+}
+
+// Test: Create store error on IsEmailTaken
+func TestUserService_Create_IsEmailTakenError(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("IsEmailTaken", mock.Anything, "err@example.com").
+		Return(false, errors.New("db error"))
+
+	_, err := svc.Create(context.Background(), &api.SignUpRequest{
+		Email: "err@example.com", Password: "password",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "db error")
+}
+
+// Test: GetUser success
+func TestUserService_GetUser_Success(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	uid := uuid.New()
+	mus.On("Get", mock.Anything, uid.String()).
+		Return(&interfaces.User{ID: uid, Email: "ok@test.com"}, nil)
+
+	user, err := svc.GetUser(context.Background(), uid.String())
+	assert.NoError(t, err)
+	assert.Equal(t, "ok@test.com", user.Email)
+}
+
+// Test: GetUser generic error (not ErrNoSuchEntity)
+func TestUserService_GetUser_GenericError(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("Get", mock.Anything, "id-err").
+		Return((*interfaces.User)(nil), errors.New("db error"))
+
+	_, err := svc.GetUser(context.Background(), "id-err")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "db error")
+}
+
+// Test: GetUsers success
+func TestUserService_GetUsers_Success(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("GetUsers", mock.Anything).Return([]*interfaces.User{
+		{Email: "a@test.com"}, {Email: "b@test.com"},
+	}, nil)
+
+	users, err := svc.GetUsers(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, users, 2)
+}
+
+// Test: GetUsers error
+func TestUserService_GetUsers_Error(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("GetUsers", mock.Anything).
+		Return(([]*interfaces.User)(nil), errors.New("db error"))
+
+	_, err := svc.GetUsers(context.Background())
+	assert.Error(t, err)
+}
+
+// Test: GetUsersByRole
+func TestUserService_GetUsersByRole_Success(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("GetUsersByRole", mock.Anything, "admin").Return([]*interfaces.User{
+		{Email: "admin@test.com", Role: "admin"},
+	}, nil)
+
+	users, err := svc.GetUsersByRole(context.Background(), "admin")
+	assert.NoError(t, err)
+	assert.Len(t, users, 1)
+}
+
+// Test: DeleteUser not found
+func TestUserService_DeleteUser_NotFound(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("DeleteUser", mock.Anything, "missing").Return(errs.ErrNoSuchEntity)
+
+	err := svc.DeleteUser(context.Background(), "missing")
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, errs.ErrNoSuchEntity))
+}
+
+// Test: DeleteUser generic error
+func TestUserService_DeleteUser_GenericError(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("DeleteUser", mock.Anything, "err").Return(errors.New("db error"))
+
+	err := svc.DeleteUser(context.Background(), "err")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to delete user")
+}
+
+// Test: UpdateUser not found
+func TestUserService_UpdateUser_NotFound(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("UpdateUser", mock.Anything, "missing", mock.Anything).
+		Return((*interfaces.User)(nil), errs.ErrNoSuchEntity)
+
+	_, err := svc.UpdateUser(context.Background(), "missing", &api.UpdateUserRequest{
+		FirstName: "John",
+	})
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, errs.ErrNoSuchEntity))
+}
+
+// Test: UpdateUser with phone normalization
+func TestUserService_UpdateUser_PhoneNormalization(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	uid := uuid.New()
+	mus.On("UpdateUser", mock.Anything, uid.String(), mock.Anything).
+		Return(&interfaces.User{ID: uid, PhoneNumber: "+21622334455"}, nil)
+
+	got, err := svc.UpdateUser(context.Background(), uid.String(), &api.UpdateUserRequest{
+		PhoneNumber: "22334455",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "+21622334455", got.PhoneNumber)
+}
+
+// Test: UpdateUser invalid phone
+func TestUserService_UpdateUser_InvalidPhone(t *testing.T) {
+	t.Parallel()
+	svc := NewUserService(new(MockUserStore), nil)
+
+	_, err := svc.UpdateUser(context.Background(), uuid.New().String(), &api.UpdateUserRequest{
+		PhoneNumber: "123", // invalid Tunisian phone
+	})
+	assert.Error(t, err)
+}
+
+// Test: UpdateUserFields phone normalization
+func TestUserService_UpdateUserFields_PhoneNormalization(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	uid := uuid.New()
+	mus.On("UpdateUserFields", mock.Anything, uid.String(), mock.MatchedBy(func(f map[string]interface{}) bool {
+		return f["phone_number"] == "+21622334455"
+	})).Return(&interfaces.User{ID: uid}, nil)
+
+	fields := map[string]interface{}{"phone_number": "22334455"}
+	_, err := svc.UpdateUserFields(context.Background(), uid.String(), fields)
+	assert.NoError(t, err)
+}
+
+// Test: UpdateUserFields invalid phone
+func TestUserService_UpdateUserFields_InvalidPhone(t *testing.T) {
+	t.Parallel()
+	svc := NewUserService(new(MockUserStore), nil)
+
+	fields := map[string]interface{}{"phone_number": "123"}
+	_, err := svc.UpdateUserFields(context.Background(), uuid.New().String(), fields)
+	assert.Error(t, err)
+}
+
+// Test: UpdateUserFields not found
+func TestUserService_UpdateUserFields_NotFound(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("UpdateUserFields", mock.Anything, "missing", mock.Anything).
+		Return((*interfaces.User)(nil), errs.ErrNoSuchEntity)
+
+	_, err := svc.UpdateUserFields(context.Background(), "missing", map[string]interface{}{"first_name": "X"})
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, errs.ErrNoSuchEntity))
+}
+
+// Test: CreateWithPassword success
+func TestUserService_CreateWithPassword_Success(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	email := "new@test.com"
+	uid := uuid.New()
+	mus.On("IsEmailTaken", mock.Anything, email).Return(false, nil)
+	mus.On("CreateUser", mock.Anything, mock.AnythingOfType("*interfaces.User"), "", mock.Anything).
+		Return(&interfaces.User{ID: uid, Email: email}, nil)
+
+	res, err := svc.CreateWithPassword(context.Background(), &api.SignUpRequest{
+		Email:    email,
+		Password: "mypassword",
+		Role:     "user",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, uid.String(), res.ID)
+}
+
+// Test: CreateWithPassword email taken
+func TestUserService_CreateWithPassword_EmailTaken(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("IsEmailTaken", mock.Anything, "taken@test.com").Return(true, nil)
+
+	_, err := svc.CreateWithPassword(context.Background(), &api.SignUpRequest{
+		Email:    "TAKEN@test.com",
+		Password: "password",
+	})
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, errs.ErrEmailTaken))
+}
+
+// Test: CreateOrGetOAuthUser returns existing
+func TestUserService_CreateOrGetOAuthUser_ExistingUser(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	uid := uuid.New()
+	mus.On("FindByEmailAndProvider", mock.Anything, "oauth@test.com", "google").
+		Return(&interfaces.User{ID: uid, Email: "oauth@test.com"}, nil)
+
+	user, err := svc.CreateOrGetOAuthUser(context.Background(), &api.SignUpRequest{
+		Email:    "OAUTH@test.com",
+		Provider: "google",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, uid, user.ID)
+}
+
+// Test: CreateOrGetOAuthUser creates new
+func TestUserService_CreateOrGetOAuthUser_NewUser(t *testing.T) {
+	t.Parallel()
+	mus := new(MockUserStore)
+	svc := NewUserService(mus, nil)
+
+	mus.On("FindByEmailAndProvider", mock.Anything, "new@test.com", "google").
+		Return((*interfaces.User)(nil), errors.New("not found"))
+	uid := uuid.New()
+	mus.On("CreateUser", mock.Anything, mock.AnythingOfType("*interfaces.User"), "", "").
+		Return(&interfaces.User{ID: uid, Email: "new@test.com"}, nil)
+
+	user, err := svc.CreateOrGetOAuthUser(context.Background(), &api.SignUpRequest{
+		Email:    "new@test.com",
+		Provider: "google",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, uid, user.ID)
+}
+
+// Test: NewUserService nil logger
+func TestNewUserService_NilLogger(t *testing.T) {
+	t.Parallel()
+
+	svc := NewUserService(new(MockUserStore), nil)
+	assert.NotNil(t, svc)
+	assert.NotNil(t, svc.logger)
 }

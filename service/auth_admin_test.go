@@ -1,14 +1,7 @@
 package service_test
 
 import (
-	"context"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/malekradhouane/magic/api"
-	"github.com/malekradhouane/magic/service"
 )
 
 // TestSignUpWithPassword_AdminRole tests that admin role is respected when explicitly set

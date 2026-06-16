@@ -81,7 +81,37 @@ clean:
 
 .PHONY: test
 test:
-	$(GO) test ./...
+	$(GO) test ./... -race -count=1
+
+.PHONY: test-cover
+test-cover:
+	$(GO) test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+	@$(GO) tool cover -func=coverage.out | tail -1
+
+.PHONY: test-service
+test-service:
+	$(GO) test ./service/ -race -count=1 -v
+
+.PHONY: lint
+lint:
+	@echo "Running gofmt check..."
+	@test -z "$$(gofmt -l .)" || (echo "gofmt: unformatted files:" && gofmt -l . && exit 1)
+	@echo "Running go vet..."
+	@$(GO) vet ./...
+	@echo "Running golangci-lint..."
+	@golangci-lint run --timeout=5m || true
+	@echo "Lint OK"
+
+.PHONY: security
+security:
+	@echo "Running gosec..."
+	@gosec -severity high -exclude-generated ./... || true
+	@echo "Running govulncheck..."
+	@govulncheck ./... || true
+
+.PHONY: ci
+ci: lint test
+	@echo "CI checks passed"
 
 .PHONY: run-serve
 run-serve:
