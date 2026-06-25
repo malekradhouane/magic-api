@@ -1545,7 +1545,7 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Update user information",
+                "description": "Update profile fields of the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -1555,7 +1555,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Update a user",
+                "summary": "Update a user (self)",
                 "parameters": [
                     {
                         "type": "string",
@@ -1577,7 +1577,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.UpdateUserRequest"
+                            "$ref": "#/definitions/api.UpdateUserSelfRequest"
                         }
                     }
                 ],
@@ -1594,6 +1594,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresp.HTTPError"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httpresp.HTTPError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -1604,6 +1610,54 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/httpresp.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/admin": {
+            "patch": {
+                "description": "Admin-only update that may flip privileged fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update a user (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Privileged user update data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interfaces.User"
                         }
                     }
                 }
@@ -2435,6 +2489,35 @@ const docTemplate = `{
                 },
                 "phone_verified": {
                     "type": "boolean"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.UpdateUserSelfRequest": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "locale": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"

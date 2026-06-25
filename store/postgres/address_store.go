@@ -35,7 +35,9 @@ func NewAddressStore() (*AddressStore, error) {
 	if theAddressStore != nil {
 		return theAddressStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	theAddressStore = &AddressStore{Client: client}
 
 	logrus.Info("AddressStore created")

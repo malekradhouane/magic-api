@@ -42,7 +42,9 @@ func NewStatsStore() (*StatsStore, error) {
 	if theStatsStore != nil {
 		return theStatsStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	theStatsStore = &StatsStore{Client: client}
 
 	logrus.Info("StatsStore created")

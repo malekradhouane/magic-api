@@ -37,7 +37,9 @@ func NewProductStore() (*ProductStore, error) {
 	if theProductStore != nil {
 		return theProductStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	theProductStore = &ProductStore{Client: client}
 
 	logrus.Info("ProductStore created")

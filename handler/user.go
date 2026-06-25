@@ -20,19 +20,32 @@ import (
 
 // UserHandler represents users handler actions
 type UserHandler struct {
-	userService *service.UserService
-	authService *service.AuthService
-	cman        configmanager.ManagerContract
-	auth        gin.HandlerFunc
+	userService     *service.UserService
+	authService     *service.AuthService
+	cman            configmanager.ManagerContract
+	auth            gin.HandlerFunc
+	registerLimiter gin.HandlerFunc
 }
 
-// NewUserHandler constructor
-func NewUserHandler(us *service.UserService, authService *service.AuthService, auth gin.HandlerFunc, cman configmanager.ManagerContract) *UserHandler {
+// NewUserHandler constructor. registerRL is applied to the public POST /users
+// endpoint to defeat bulk account creation and email enumeration. It may be
+// the no-op handler in tests but should never be nil in production.
+func NewUserHandler(
+	us *service.UserService,
+	authService *service.AuthService,
+	auth gin.HandlerFunc,
+	registerRL gin.HandlerFunc,
+	cman configmanager.ManagerContract,
+) *UserHandler {
+	if registerRL == nil {
+		registerRL = func(c *gin.Context) { c.Next() }
+	}
 	return &UserHandler{
-		userService: us,
-		authService: authService,
-		cman:        cman,
-		auth:        auth,
+		userService:     us,
+		authService:     authService,
+		cman:            cman,
+		auth:            auth,
+		registerLimiter: registerRL,
 	}
 }
 
@@ -40,12 +53,17 @@ func NewUserHandler(us *service.UserService, authService *service.AuthService, a
 func (uh *UserHandler) SetupUsersRoutes(g *gin.RouterGroup) *gin.RouterGroup {
 	endpoint := "users"
 
-	g.Group("/"+endpoint).POST("", uh.CreateUser)
+	// Public registration — rate-limited per IP to block account farming and
+	// bcrypt-based DoS.
+	g.Group("/"+endpoint).POST("", uh.registerLimiter, uh.CreateUser)
+
+	// Self-service routes: a user may only read / update themselves unless
+	// they have an admin-level role. Privileged fields cannot be set here.
 	users := g.Group("/" + endpoint)
 	{
 		users.Use(uh.auth)
-		users.GET("/:id", uh.GetUser)
-		users.PATCH("/:id", uh.UpdateUser)
+		users.GET("/:id", middleware.RequireSelfOrAdmin("id"), uh.GetUser)
+		users.PATCH("/:id", middleware.RequireSelfOrAdmin("id"), uh.UpdateUser)
 	}
 
 	adminUsers := g.Group("/" + endpoint)
@@ -55,6 +73,8 @@ func (uh *UserHandler) SetupUsersRoutes(g *gin.RouterGroup) *gin.RouterGroup {
 		adminUsers.GET("", uh.GetUsers)
 		adminUsers.GET("/admins", uh.GetAdmins)
 		adminUsers.GET("/customers", uh.GetCustomers)
+		// Admin-only privileged update (role, is_active, is_superuser, …).
+		adminUsers.PATCH("/:id/admin", uh.AdminUpdateUser)
 		adminUsers.DELETE("/:id", uh.DeleteUser)
 	}
 
@@ -153,21 +173,65 @@ func (uh *UserHandler) GetUser(c *gin.Context) {
 	httpresp.NewResult(c, http.StatusOK, user)
 }
 
-// UpdateUser handles HTTP PATCH /users/:id
-// @Summary Update a user
-// @Description Update user information
+// UpdateUser handles HTTP PATCH /users/:id for the authenticated user.
+// Only safe profile fields are accepted; privileged fields such as is_active
+// or is_superuser are rejected here even if the caller submits them. Admins
+// must use PATCH /users/:id/admin to flip privileged fields.
+// @Summary Update a user (self)
+// @Description Update profile fields of the authenticated user
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "User ID"
-// @Param input body api.UpdateUserRequest true "User update data"
+// @Param input body api.UpdateUserSelfRequest true "User update data"
 // @Success 200 {object} interfaces.User
 // @Failure 400 {object} httpresp.HTTPError
+// @Failure 403 {object} httpresp.HTTPError
 // @Failure 404 {object} httpresp.HTTPError
 // @Failure 500 {object} httpresp.HTTPError
 // @Router /users/{id} [patch]
 func (uh *UserHandler) UpdateUser(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		httpresp.NewError(c, http.StatusBadRequest, fmt.Errorf("user ID is required"))
+		return
+	}
+
+	var req api.UpdateUserSelfRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpresp.NewError(c, http.StatusBadRequest, fmt.Errorf("invalid request body: %v", err))
+		return
+	}
+
+	updatedUser, err := uh.userService.UpdateUserSelf(c.Request.Context(), id, &req)
+	if err != nil {
+		if errors.Is(err, errs.ErrNoSuchEntity) {
+			httpresp.NewError(c, http.StatusNotFound, fmt.Errorf("user not found"))
+			return
+		}
+		httpresp.NewError(c, http.StatusInternalServerError, fmt.Errorf("failed to update user: %v", err))
+		return
+	}
+
+	httpresp.NewResult(c, http.StatusOK, updatedUser)
+}
+
+// AdminUpdateUser handles PATCH /users/:id/admin and accepts the privileged
+// payload (role flags, activation status, …). Restricted to admins via the
+// RequireAdmin middleware on the route group. Every successful call is
+// audit-logged so privilege changes can be traced.
+// @Summary Update a user (admin)
+// @Description Admin-only update that may flip privileged fields
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "User ID"
+// @Param input body api.UpdateUserRequest true "Privileged user update data"
+// @Success 200 {object} interfaces.User
+// @Router /users/{id}/admin [patch]
+func (uh *UserHandler) AdminUpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		httpresp.NewError(c, http.StatusBadRequest, fmt.Errorf("user ID is required"))
@@ -189,6 +253,13 @@ func (uh *UserHandler) UpdateUser(c *gin.Context) {
 		httpresp.NewError(c, http.StatusInternalServerError, fmt.Errorf("failed to update user: %v", err))
 		return
 	}
+
+	auditLog(c, "user.admin_update", map[string]any{
+		"target_user_id":     id,
+		"set_is_superuser":   req.IsSuperuser,
+		"set_is_active":      req.IsActive,
+		"set_email_verified": req.EmailVerified,
+	})
 
 	httpresp.NewResult(c, http.StatusOK, updatedUser)
 }
@@ -267,6 +338,11 @@ func (uh *UserHandler) CreateAdmin(c *gin.Context) {
 		return
 	}
 
+	auditLog(c, "user.admin_create", map[string]any{
+		"new_admin_email": req.Email,
+		"new_admin_id":    result.User.ID.String(),
+	})
+
 	httpresp.NewResult(c, http.StatusCreated, result.User)
 }
 
@@ -299,6 +375,8 @@ func (uh *UserHandler) DeleteUser(c *gin.Context) {
 		httpresp.NewError(c, http.StatusInternalServerError, fmt.Errorf("failed to delete user: %v", err))
 		return
 	}
+
+	auditLog(c, "user.admin_delete", map[string]any{"target_user_id": id})
 
 	c.Status(http.StatusNoContent)
 }

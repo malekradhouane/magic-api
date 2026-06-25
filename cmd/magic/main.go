@@ -84,6 +84,11 @@ func main() {
 	// init HTTP router
 	r := rr.http.ginEngine
 	authMiddleware := rr.http.ginAuthMiddleware
+	// Security headers on every response (HSTS, CSP, X-Frame-Options, …).
+	r.Use(middleware.SecurityHeaders())
+	// Cap multipart uploads (CSV imports etc.) to 16 MiB in memory; the rest
+	// spills to /tmp. Defaults to 32 MiB which is too generous for our needs.
+	r.MaxMultipartMemory = 16 << 20
 	// Ping test
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
@@ -98,11 +103,26 @@ func main() {
 
 	ginJWT := rr.http.ginJwt
 
-	// Rate limiter for auth endpoints: 10 requests per minute per IP
-	authLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
+	// Rate limiters used across the auth surface.
+	//   ipAuthLimiter:    10 attempts / minute / IP — covers /login, /authenticate.
+	//   emailAuthLimiter: 5 attempts / 15 minutes / email — defeats credential
+	//                     stuffing on a known account.
+	//   registerLimiter:  5 attempts / hour / IP — slows down account farming
+	//                     and bcrypt-based DoS via POST /users.
+	//   guestOrderLimiter: 5 attempts / 15 minutes / IP — slows down enumeration
+	//                     of guest order lookups by phone.
+	ipAuthLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
+	emailAuthLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
+	registerLimiter := middleware.NewRateLimiter(5, 1*time.Hour)
+	guestOrderLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
 
-	// Login endpoint
-	r.POST("/login", authLimiter.Middleware(), authMiddleware.LoginHandler)
+	loginRL := middleware.LoginRateLimit(ipAuthLimiter, emailAuthLimiter)
+	genericAuthRL := middleware.LoginRateLimit(ipAuthLimiter, nil)
+	registerRL := registerLimiter.Middleware()
+	guestOrderRL := guestOrderLimiter.Middleware()
+
+	// Login endpoint — combined IP + email rate limit.
+	r.POST("/login", loginRL, authMiddleware.LoginHandler)
 
 	api := r.Group("/api")
 	userService := service.NewUserService(store.Users(), rr.logger)
@@ -149,14 +169,14 @@ func main() {
 	orderService.SetNotifier(notificationService)
 
 	// Sets up auth routes
-	authCtrl, err := handler.NewController(rr.cman, authMiddleware, ginJWT, authService, authLimiter)
+	authCtrl, err := handler.NewController(rr.cman, authMiddleware, ginJWT, authService, loginRL, genericAuthRL)
 	if err != nil {
 		rr.Shutdown(err)
 	}
 	authCtrl.SetupRoutes(api)
 
 	// Sets up user routes
-	userHandler := handler.NewUserHandler(userService, authService, authMiddleware.MiddlewareFunc(), rr.cman)
+	userHandler := handler.NewUserHandler(userService, authService, authMiddleware.MiddlewareFunc(), registerRL, rr.cman)
 	userHandler.SetupUsersRoutes(api)
 
 	// E-commerce routes
@@ -170,6 +190,7 @@ func main() {
 		orderService,
 		authMiddleware.MiddlewareFunc(),
 		middleware.OptionalJWTMiddleware(authMiddleware),
+		guestOrderRL,
 	)
 	orderHandler.SetupRoutes(api)
 
@@ -197,18 +218,29 @@ func main() {
 		r.GET("/swagger/*any", setDocumentationInfo, ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
-	// Starts up server
+	// Starts up server with hardened timeouts to mitigate Slowloris-style
+	// attacks and resource exhaustion. Values are intentionally conservative
+	// for a JSON API; bump WriteTimeout when serving large file downloads.
 	httpConfig := itconfig.HttpServer
 	listenAddr := fmt.Sprintf("%s:%d", httpConfig.Listen, httpConfig.Port)
+	srv := &http.Server{
+		Addr:              listenAddr,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1 MiB
+	}
 	go func() {
 		if httpConfig.TLS {
 			rr.logger.Println("TLS ON", listenAddr)
-			err = http.ListenAndServeTLS(listenAddr, httpConfig.CertFile, httpConfig.KeyFile, r)
+			err = srv.ListenAndServeTLS(httpConfig.CertFile, httpConfig.KeyFile)
 		} else {
 			rr.logger.Println("TLS OFF", listenAddr)
-			err = http.ListenAndServe(listenAddr, r)
+			err = srv.ListenAndServe()
 		}
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			rr.Shutdown(err)
 		}
 	}()

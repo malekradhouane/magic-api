@@ -2,8 +2,8 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
+	"strconv"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/asaskevich/govalidator"
@@ -20,14 +20,29 @@ import (
 
 // OrderHandler exposes order endpoints
 type OrderHandler struct {
-	service      *service.OrderService
-	auth         gin.HandlerFunc
-	optionalAuth gin.HandlerFunc
+	service       *service.OrderService
+	auth          gin.HandlerFunc
+	optionalAuth  gin.HandlerFunc
+	guestLookupRL gin.HandlerFunc
 }
 
-// NewOrderHandler constructs an OrderHandler
-func NewOrderHandler(s *service.OrderService, auth, optionalAuth gin.HandlerFunc) *OrderHandler {
-	return &OrderHandler{service: s, auth: auth, optionalAuth: optionalAuth}
+// NewOrderHandler constructs an OrderHandler. guestLookupRL is applied to
+// the guest order-lookup endpoint (GET /orders/:id?phone=…) to slow down
+// brute-force attempts on the phone parameter. If nil, a no-op is used.
+func NewOrderHandler(
+	s *service.OrderService,
+	auth, optionalAuth gin.HandlerFunc,
+	guestLookupRL gin.HandlerFunc,
+) *OrderHandler {
+	if guestLookupRL == nil {
+		guestLookupRL = func(c *gin.Context) { c.Next() }
+	}
+	return &OrderHandler{
+		service:       s,
+		auth:          auth,
+		optionalAuth:  optionalAuth,
+		guestLookupRL: guestLookupRL,
+	}
 }
 
 // SetupRoutes registers order routes
@@ -48,7 +63,8 @@ func NewOrderHandler(s *service.OrderService, auth, optionalAuth gin.HandlerFunc
 func (h *OrderHandler) SetupRoutes(g *gin.RouterGroup) {
 	// Public (guest-friendly); optionalAuth links orders to logged-in users when a Bearer token is sent.
 	g.POST("/orders", h.optionalAuth, h.Create)
-	g.GET("/orders/:id", h.optionalAuth, h.Get)
+	// Guest lookup is rate-limited to defeat phone-number / order-id enumeration.
+	g.GET("/orders/:id", h.guestLookupRL, h.optionalAuth, h.Get)
 
 	// Authenticated (current user)
 	authed := g.Group("")
@@ -180,8 +196,16 @@ func (h *OrderHandler) ListMyOrders(c *gin.Context) {
 		return
 	}
 
-	limit, _ := parseIntQuery(c, "limit", 20)
-	offset, _ := parseIntQuery(c, "offset", 0)
+	limit, err := parseIntQuery(c, "limit", 20)
+	if err != nil {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, "invalid limit: "+err.Error())
+		return
+	}
+	offset, err := parseIntQuery(c, "offset", 0)
+	if err != nil {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, "invalid offset: "+err.Error())
+		return
+	}
 
 	resp, err := h.service.ListByUser(c.Request.Context(), userID, limit, offset)
 	if err != nil {
@@ -255,26 +279,35 @@ func (h *OrderHandler) UpdateStatus(c *gin.Context) {
 	httpresp.NewResult(c, http.StatusOK, order)
 }
 
-// extractUserIDOptional reads the JWT user ID claim (returns "" if not authenticated)
+// extractUserIDOptional reads the JWT "id" claim and validates it as a UUID.
+// Returns "" when no token is attached or when the claim is missing/malformed,
+// which prevents an attacker from supplying an arbitrary string via a forged
+// or unverified claim source.
 func extractUserIDOptional(c *gin.Context) string {
 	claims := jwt.ExtractClaims(c)
 	if claims == nil {
 		return ""
 	}
-	if id, ok := claims["id"].(string); ok {
-		return id
+	id, ok := claims["id"].(string)
+	if !ok || id == "" {
+		return ""
 	}
-	return ""
+	if _, err := uuid.Parse(id); err != nil {
+		return ""
+	}
+	return id
 }
 
-// parseIntQuery parses an integer query param with a default fallback
+// parseIntQuery parses an integer query param, falling back to def when the
+// param is missing. Returns an error when the value is present but malformed
+// so callers can surface a 400 instead of silently using the default.
 func parseIntQuery(c *gin.Context, key string, def int) (int, error) {
 	v := c.Query(key)
 	if v == "" {
 		return def, nil
 	}
-	var n int
-	if _, err := fmt.Sscanf(v, "%d", &n); err != nil {
+	n, err := strconv.Atoi(v)
+	if err != nil {
 		return def, err
 	}
 	return n, nil

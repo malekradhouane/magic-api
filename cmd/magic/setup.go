@@ -338,10 +338,11 @@ func (rr *ResourcesRegistry) setupGinRouter() error {
 			}
 		}
 	}
-	// Allow localhost origins in addition to the configured list. This lets a
-	// local frontend talk to a remote deployment. Set CORS_ALLOW_LOCALHOST=false
-	// to disable localhost access in production.
-	allowLocalhost := strings.ToLower(strings.TrimSpace(os.Getenv("CORS_ALLOW_LOCALHOST"))) != "false"
+	// Allow localhost origins in addition to the configured list. Set
+	// CORS_ALLOW_LOCALHOST=true to enable this in development. Defaults to
+	// false so production deployments do not silently accept localhost
+	// origins with AllowCredentials=true (which is a known CSRF foot-gun).
+	allowLocalhost := strings.EqualFold(strings.TrimSpace(os.Getenv("CORS_ALLOW_LOCALHOST")), "true")
 
 	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "PUT", "POST", "DELETE", "PATCH", "OPTIONS", "HEAD"},
@@ -370,7 +371,11 @@ func (rr *ResourcesRegistry) setupGinRouter() error {
 
 	rr.http.ginRouterAPI = rr.http.ginEngine.Group("/api")
 
-	if authMiddleware, err := jwt.New(rr.http.ginJwt.MiddlewareHandler()); err != nil {
+	mwConfig, err := rr.http.ginJwt.MiddlewareHandler()
+	if err != nil {
+		return fmt.Errorf("jwt middleware config: %w", err)
+	}
+	if authMiddleware, err := jwt.New(mwConfig); err != nil {
 		return err
 	} else {
 		rr.http.ginAuthMiddleware = authMiddleware
@@ -514,8 +519,7 @@ func (rr *ResourcesRegistry) setupGatekeeper() error {
 	}
 
 	rr.gatekeeper.casbin = enforcer
-
-	fmt.Println("Casbin enforcer loaded", enforcer)
+	rr.logger.WithField("policies", len(enforcer.GetPolicy())).Info("Casbin enforcer loaded")
 
 	oidcConfig := rr.cman.Magic().Auth.OIDC
 	cookie := rr.cman.Magic().Auth.Cookie

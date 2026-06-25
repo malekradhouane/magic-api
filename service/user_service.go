@@ -53,7 +53,8 @@ func (us *UserService) Create(ctx context.Context, req *api.SignUpRequest) (*api
 		us.logger.WithError(err).WithField("email", email).Error("Failed to hash password")
 		return nil, err
 	}
-	req.Password = string(hashedPassword)
+	// Do not mutate the inbound DTO: keeping request structs immutable avoids
+	// accidental hash-vs-cleartext confusion at downstream call sites.
 
 	user, err := us.userStore.CreateUser(ctx, conv.ToStoreUser(req, string(hashedPassword)), "", "user")
 	if err != nil {
@@ -205,11 +206,35 @@ func (us *UserService) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-// UpdateUser updates a user's information
+// UpdateUser updates a user's information using the admin payload.
+// Callers MUST gate this method behind an admin role check; the payload can
+// flip privileged fields such as is_active / is_superuser.
 func (us *UserService) UpdateUser(ctx context.Context, id string, req *api.UpdateUserRequest) (*interfaces.User, error) {
 	// Validate & normalize the phone number when the caller supplies one.
 	// The order workflow requires a valid Tunisian number so the admin can
 	// call the customer to confirm orders by phone.
+	if strings.TrimSpace(req.PhoneNumber) != "" {
+		normalized, err := phone.Normalize(req.PhoneNumber)
+		if err != nil {
+			return nil, err
+		}
+		req.PhoneNumber = normalized
+	}
+
+	updatedUser, err := us.userStore.UpdateUser(ctx, id, req.ToUser())
+	if err != nil {
+		if errs.IsNoSuchEntityError(err) {
+			return nil, errs.ErrNoSuchEntity
+		}
+		return nil, fmt.Errorf("failed to update user: %v", err)
+	}
+
+	return updatedUser, nil
+}
+
+// UpdateUserSelf updates only the profile fields a user is allowed to change
+// on themselves. Privileged fields are intentionally not exposed.
+func (us *UserService) UpdateUserSelf(ctx context.Context, id string, req *api.UpdateUserSelfRequest) (*interfaces.User, error) {
 	if strings.TrimSpace(req.PhoneNumber) != "" {
 		normalized, err := phone.Normalize(req.PhoneNumber)
 		if err != nil {

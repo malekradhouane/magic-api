@@ -36,7 +36,9 @@ func NewPromoStore() (*PromoStore, error) {
 	if thePromoStore != nil {
 		return thePromoStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	thePromoStore = &PromoStore{Client: client}
 
 	logrus.Info("PromoStore created")

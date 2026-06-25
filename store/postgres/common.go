@@ -4,8 +4,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"os"
-	"regexp"
 	"strings"
 
 	"github.com/oklog/ulid"
@@ -16,45 +14,55 @@ import (
 var (
 	logger           = logtool.SetupLogger("[STORE/POSTEGRES]")
 	ErrDuplicatedKey = errors.New("duplicate key error")
+
+	// ErrClientNotInitialised is returned by MustClientInitialised when the
+	// package-level PostgreSQL client has not been created/configured yet.
+	// Surfaced as an error (no more os.Exit) so callers can decide what to do.
+	ErrClientNotInitialised = errors.New("postgres client is not initialised")
 )
 
 type StringArray []string
 
-// MustClientInitialized checks if postgres is initialized
-func MustClientInitialized(c *Client) {
+// MustClientInitialized verifies that the package-level postgres client has
+// been created and connected. It returns ErrClientNotInitialised when any
+// pre-requisite is missing instead of terminating the process — callers
+// (typically NewXxxStore) must bubble the error up to main().
+//
+// TODO: remove the package-level singleton entirely and inject *Client into
+// every NewXxxStore constructor (clean-architecture rule).
+func MustClientInitialized(c *Client) error {
 	if c == nil {
 		logger.Error("Postgres client not created (nil)")
-		os.Exit(-1)
+		return ErrClientNotInitialised
 	}
-
 	s := c.Session()
-
 	if s == nil {
-		logger.Error("Postgres client Magic session not created (nil)")
-		os.Exit(-1)
+		logger.Error("Postgres client session not created (nil)")
+		return ErrClientNotInitialised
 	}
-
 	if s.GetDB() == nil {
 		logger.Error("Postgres DB object not created (nil)")
-		os.Exit(-1)
+		return ErrClientNotInitialised
 	}
-
+	return nil
 }
 
 func generateUUID() string {
 	return ulid.MustNew(ulid.Now(), nil).String()
 }
 
+// wrapPgError normalises a PostgreSQL driver error so callers can inspect it
+// with errors.Is(err, ErrDuplicatedKey).
+//
+// TODO: replace the string match with a typed check against *pgconn.PgError
+// (code "23505") once jackc/pgx is promoted to a direct dependency.
 func wrapPgError(err error) error {
 	if err == nil {
 		return nil
 	}
-
-	// Fallback for unrecognized wrapping
 	if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 		return fmt.Errorf("%w: %v", ErrDuplicatedKey, err)
 	}
-
 	return err
 }
 
@@ -66,16 +74,6 @@ func isEmailDuplicateError(err error) bool {
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "idx_users_email") ||
 		(strings.Contains(msg, "duplicate key") && strings.Contains(msg, "email"))
-}
-
-func ToSnakeCase(str string) string {
-	// Regular expression to match uppercase letters or sequences of them
-	re := regexp.MustCompile("([a-z0-9])([A-Z])")
-	// Replace with lowercase and underscore
-	snake := re.ReplaceAllString(str, "${1}_${2}")
-	// Special case for sequences of uppercase letters
-	snake = regexp.MustCompile("([A-Z])([A-Z][a-z])").ReplaceAllString(snake, "${1}_${2}")
-	return strings.ToLower(snake)
 }
 
 func (sa *StringArray) Scan(src any) error {

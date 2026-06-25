@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -87,117 +88,181 @@ func NewOrderService(
 	}
 }
 
-// Create builds and persists an order from a CreateOrderRequest
-// userID is empty string for guest checkout
+// Create builds and persists an order from a CreateOrderRequest.
+// userID is the empty string for a guest checkout.
+//
+// The flow is split into helpers to keep this orchestrator readable: build
+// line items → compute totals → assemble order → reserve stock → persist →
+// post-creation side-effects.
 func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest, userID string) (*interfaces.Order, error) {
 	if len(req.Items) == 0 {
 		return nil, fmt.Errorf("order has no items")
 	}
 
-	// 1. Validate items & build line items + compute subtotal
-	subtotal := 0.0
-	items := make([]interfaces.OrderItem, 0, len(req.Items))
-
-	for _, lineReq := range req.Items {
-		if lineReq.Quantity <= 0 {
-			return nil, fmt.Errorf("invalid quantity for product %s", lineReq.ProductID)
-		}
-
-		product, err := os.productStore.GetByID(ctx, lineReq.ProductID)
-		if err != nil {
-			os.logger.WithError(err).
-				WithField("product_id", lineReq.ProductID).
-				Error("Failed to load product for order")
-			return nil, fmt.Errorf("product %s not found", lineReq.ProductID)
-		}
-		if !product.IsActive {
-			return nil, fmt.Errorf("product %s is not available", product.Name)
-		}
-
-		if lineReq.Size == "" {
-			return nil, fmt.Errorf("taille requise pour le produit %s", product.Name)
-		}
-		if lineReq.Color == "" {
-			return nil, fmt.Errorf("couleur requise pour le produit %s", product.Name)
-		}
-		if !hasVariantStock(product, lineReq.Size, lineReq.Color, lineReq.Quantity) {
-			return nil, fmt.Errorf(
-				"stock insuffisant pour %s (%s / %s)",
-				product.Name,
-				lineReq.Size,
-				lineReq.Color,
-			)
-		}
-
-		lineTotal := product.Price * float64(lineReq.Quantity)
-		subtotal += lineTotal
-
-		// Snapshot main image
-		var mainImage string
-		for _, img := range product.Images {
-			if img.IsPrimary || mainImage == "" {
-				mainImage = img.URL
-				if img.IsPrimary {
-					break
-				}
-			}
-		}
-
-		productID := product.ID
-		items = append(items, interfaces.OrderItem{
-			ProductID:    &productID,
-			ProductName:  product.Name,
-			ProductImage: mainImage,
-			ProductSlug:  product.Slug,
-			Size:         lineReq.Size,
-			Color:        lineReq.Color,
-			UnitPrice:    product.Price,
-			Quantity:     lineReq.Quantity,
-			LineTotal:    lineTotal,
-		})
+	items, subtotal, err := os.buildOrderItems(ctx, req.Items)
+	if err != nil {
+		return nil, err
 	}
 
-	// 2. Compute shipping fee
-	shippingFee := StandardShippingFee
+	shippingFee := computeShippingFee(subtotal)
+
+	discount, appliedPromo, promoCodeStr, err := os.applyPromoCode(ctx, req.PromoCode, subtotal, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	shippingInfo := req.ShippingInfo
+	os.enrichShippingEmail(ctx, &shippingInfo, userID)
+
+	order := buildOrder(req, items, subtotal, shippingFee, discount, promoCodeStr, shippingInfo, userID)
+
+	if err := os.reserveStockForItems(ctx, items); err != nil {
+		return nil, err
+	}
+	order.Metadata = interfaces.JSONMap{orderMetaStockReserved: true}
+
+	created, err := os.orderStore.Create(ctx, order, items)
+	if err != nil {
+		os.logger.WithError(err).Error("Failed to persist order")
+		if relErr := os.releaseStockForItems(ctx, items); relErr != nil {
+			os.logger.WithError(relErr).Error("Failed to release reserved stock after order persistence failure")
+		}
+		return nil, err
+	}
+
+	os.afterOrderCreated(ctx, created, items, shippingInfo, userID, appliedPromo, discount)
+	return created, nil
+}
+
+// buildOrderItems validates every cart line, snapshots product data into
+// OrderItems and returns the running subtotal.
+func (os *OrderService) buildOrderItems(ctx context.Context, lines []api.CreateOrderItemRequest) ([]interfaces.OrderItem, float64, error) {
+	items := make([]interfaces.OrderItem, 0, len(lines))
+	var subtotal float64
+
+	for _, lineReq := range lines {
+		item, err := os.buildOrderItem(ctx, lineReq)
+		if err != nil {
+			return nil, 0, err
+		}
+		subtotal += item.LineTotal
+		items = append(items, item)
+	}
+	return items, subtotal, nil
+}
+
+// buildOrderItem validates a single cart line and turns it into an OrderItem.
+func (os *OrderService) buildOrderItem(ctx context.Context, lineReq api.CreateOrderItemRequest) (interfaces.OrderItem, error) {
+	if lineReq.Quantity <= 0 {
+		return interfaces.OrderItem{}, fmt.Errorf("invalid quantity for product %s", lineReq.ProductID)
+	}
+
+	product, err := os.productStore.GetByID(ctx, lineReq.ProductID)
+	if err != nil {
+		os.logger.WithError(err).
+			WithField("product_id", lineReq.ProductID).
+			Error("Failed to load product for order")
+		return interfaces.OrderItem{}, fmt.Errorf("product %s not found", lineReq.ProductID)
+	}
+	if !product.IsActive {
+		return interfaces.OrderItem{}, fmt.Errorf("product %s is not available", product.Name)
+	}
+	if lineReq.Size == "" {
+		return interfaces.OrderItem{}, fmt.Errorf("taille requise pour le produit %s", product.Name)
+	}
+	if lineReq.Color == "" {
+		return interfaces.OrderItem{}, fmt.Errorf("couleur requise pour le produit %s", product.Name)
+	}
+	if !hasVariantStock(product, lineReq.Size, lineReq.Color, lineReq.Quantity) {
+		return interfaces.OrderItem{}, fmt.Errorf(
+			"stock insuffisant pour %s (%s / %s)",
+			product.Name, lineReq.Size, lineReq.Color,
+		)
+	}
+
+	lineTotal := product.Price * float64(lineReq.Quantity)
+	productID := product.ID
+	return interfaces.OrderItem{
+		ProductID:    &productID,
+		ProductName:  product.Name,
+		ProductImage: pickMainImage(product.Images),
+		ProductSlug:  product.Slug,
+		Size:         lineReq.Size,
+		Color:        lineReq.Color,
+		UnitPrice:    product.Price,
+		Quantity:     lineReq.Quantity,
+		LineTotal:    lineTotal,
+	}, nil
+}
+
+// pickMainImage returns the URL of the primary image, falling back to the
+// first one when no flag is set.
+func pickMainImage(images []interfaces.ProductImage) string {
+	var fallback string
+	for _, img := range images {
+		if img.IsPrimary {
+			return img.URL
+		}
+		if fallback == "" {
+			fallback = img.URL
+		}
+	}
+	return fallback
+}
+
+// computeShippingFee waives the shipping cost above the free-shipping threshold.
+func computeShippingFee(subtotal float64) float64 {
 	if subtotal >= FreeShippingThreshold {
-		shippingFee = 0
+		return 0
+	}
+	return StandardShippingFee
+}
+
+// applyPromoCode validates the promo code (if any) and returns the discount,
+// the promo to record for usage tracking and a pointer to the code string for
+// storage on the order. An empty code yields zero discount and no error.
+func (os *OrderService) applyPromoCode(
+	ctx context.Context, code string, subtotal float64, userID string,
+) (float64, *interfaces.PromoCode, *string, error) {
+	if code == "" {
+		return 0, nil, nil, nil
+	}
+	validation, err := os.promoService.Validate(ctx, code, subtotal, userID)
+	if err != nil {
+		return 0, nil, nil, err
+	}
+	if !validation.Valid {
+		return 0, nil, nil, fmt.Errorf("invalid promo code: %s", validation.Message)
 	}
 
-	// 3. Apply promo code (if any)
-	discount := 0.0
-	var appliedPromo *interfaces.PromoCode
-	var promoCodeStr *string
-	if req.PromoCode != "" {
-		validation, err := os.promoService.Validate(ctx, req.PromoCode, subtotal, userID)
-		if err != nil {
-			return nil, err
-		}
-		if !validation.Valid {
-			return nil, fmt.Errorf("invalid promo code: %s", validation.Message)
-		}
-		discount = validation.DiscountAmount
-		// Reload the promo for usage tracking
-		promo, err := os.promoService.GetByCode(ctx, req.PromoCode)
-		if err == nil {
-			appliedPromo = promo
-			pc := promo.Code
-			promoCodeStr = &pc
-		}
+	promo, err := os.promoService.GetByCode(ctx, code)
+	if err != nil {
+		// We still apply the discount but skip usage tracking when the reload fails.
+		return validation.DiscountAmount, nil, nil, nil
 	}
+	pc := promo.Code
+	return validation.DiscountAmount, promo, &pc, nil
+}
 
+// buildOrder assembles the *interfaces.Order from the validated request and
+// pre-computed pricing. UserID is parsed defensively (guest checkouts pass "").
+func buildOrder(
+	req *api.CreateOrderRequest,
+	items []interfaces.OrderItem,
+	subtotal, shippingFee, discount float64,
+	promoCodeStr *string,
+	shippingInfo interfaces.ShippingInfo,
+	userID string,
+) *interfaces.Order {
 	totalPrice := subtotal + shippingFee - discount
 	if totalPrice < 0 {
 		totalPrice = 0
 	}
 
-	// 4. Build order
 	paymentMethod := req.PaymentMethod
 	if paymentMethod == "" {
 		paymentMethod = interfaces.PaymentMethodCash
 	}
-
-	shippingInfo := req.ShippingInfo
-	os.enrichShippingEmail(ctx, &shippingInfo, userID)
 
 	order := &interfaces.Order{
 		OrderNumber:    generateOrderNumber(),
@@ -214,34 +279,28 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		CustomerNotes:  req.CustomerNotes,
 	}
 	if userID != "" {
-		uid, err := uuid.Parse(userID)
-		if err == nil {
+		if uid, err := uuid.Parse(userID); err == nil {
 			order.UserID = &uid
 		}
 	}
+	// Items are stored alongside the order by the OrderStore; copying here
+	// makes the link explicit for future serialization paths.
+	order.Items = items
+	return order
+}
 
-	// 5. Reserve stock (commande en attente = stock bloqué sur les variants)
-	for _, item := range items {
-		if item.ProductID == nil || item.Size == "" || item.Color == "" {
-			return nil, fmt.Errorf(
-				"taille et couleur requises pour réserver le stock du produit %s",
-				item.ProductName,
-			)
-		}
-	}
-	if err := os.reserveStockForItems(ctx, items); err != nil {
-		return nil, err
-	}
-	order.Metadata = interfaces.JSONMap{orderMetaStockReserved: true}
-
-	// 6. Persist
-	created, err := os.orderStore.Create(ctx, order, items)
-	if err != nil {
-		os.logger.WithError(err).Error("Failed to persist order")
-		_ = os.releaseStockForItems(ctx, items)
-		return nil, err
-	}
-
+// afterOrderCreated runs every best-effort side effect that should not block
+// the response to the customer: promo usage tracking, structured log entry,
+// address book persistence, transactional email and real-time admin push.
+func (os *OrderService) afterOrderCreated(
+	ctx context.Context,
+	created *interfaces.Order,
+	items []interfaces.OrderItem,
+	shippingInfo interfaces.ShippingInfo,
+	userID string,
+	appliedPromo *interfaces.PromoCode,
+	discount float64,
+) {
 	if appliedPromo != nil {
 		if err := os.promoService.MarkUsed(ctx, appliedPromo, userID, created.ID.String(), discount); err != nil {
 			os.logger.WithError(err).Warn("Failed to record promo usage")
@@ -263,12 +322,9 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 
 	os.sendOrderConfirmationEmailAsync(created)
 
-	// Real-time push to the admin dashboard (best-effort, non-blocking).
 	if os.notifier != nil {
 		os.notifier.NotifyNewOrder(created)
 	}
-
-	return created, nil
 }
 
 // enrichShippingEmail copies the account email when checkout did not include one.
@@ -509,7 +565,9 @@ func (os *OrderService) reserveStockForItems(ctx context.Context, items []interf
 			item.Color,
 			item.Quantity,
 		); err != nil {
-			_ = os.releaseStockForItems(ctx, reserved)
+			if relErr := os.releaseStockForItems(ctx, reserved); relErr != nil {
+				os.logger.WithError(relErr).Error("Failed to release partial stock reservation")
+			}
 			return err
 		}
 		reserved = append(reserved, item)
@@ -544,9 +602,21 @@ func (os *OrderService) releaseStockForItems(ctx context.Context, items []interf
 	return firstErr
 }
 
-// generateOrderNumber returns a human-readable order number: AFR-YYYYMMDD-XXXX
+// generateOrderNumber returns a human-readable order number:
+// AFR-YYYYMMDD-XXXXXX. The 6-digit suffix is drawn from crypto/rand so it
+// is not predictable by a guest who already knows a valid number; this
+// protects the guest-lookup endpoint against enumeration.
 func generateOrderNumber() string {
 	now := time.Now()
-	suffix := rand.Intn(9000) + 1000
-	return strings.ToUpper(fmt.Sprintf("%s-%s-%d", OrderNumberPrefix, now.Format("20060102"), suffix))
+	const maxSuffix = 1_000_000 // 6 digits
+	var buf [8]byte
+	if _, err := cryptorand.Read(buf[:]); err != nil {
+		// crypto/rand should never fail; fall back to nanoseconds to keep
+		// uniqueness if it ever does.
+		return strings.ToUpper(fmt.Sprintf("%s-%s-%06d",
+			OrderNumberPrefix, now.Format("20060102"), now.UnixNano()%maxSuffix))
+	}
+	suffix := binary.BigEndian.Uint64(buf[:]) % maxSuffix
+	return strings.ToUpper(fmt.Sprintf("%s-%s-%06d",
+		OrderNumberPrefix, now.Format("20060102"), suffix))
 }

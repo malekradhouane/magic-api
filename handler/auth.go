@@ -22,33 +22,50 @@ import (
 )
 
 type controller struct {
-	cman        configmanager.ManagerContract
-	authService *service.AuthService
-	auth        *jwt.GinJWTMiddleware
-	ginJWT      *middleware.GinJWT
-	rateLimiter *middleware.RateLimiter
+	cman             configmanager.ManagerContract
+	authService      *service.AuthService
+	auth             *jwt.GinJWTMiddleware
+	ginJWT           *middleware.GinJWT
+	loginRateLimit   gin.HandlerFunc
+	genericRateLimit gin.HandlerFunc
 }
 
-func NewController(cman configmanager.ManagerContract, auth *jwt.GinJWTMiddleware, ginJWT *middleware.GinJWT, authService *service.AuthService, rateLimiter *middleware.RateLimiter) (*controller, error) {
+// NewController wires the auth controller. loginRL is a combined IP + email
+// rate limiter installed on /authenticate, /forgot-password and /reset-password
+// to defeat brute-force / credential stuffing. genericRL falls back to an IP
+// limiter when the body does not carry an email field.
+func NewController(
+	cman configmanager.ManagerContract,
+	auth *jwt.GinJWTMiddleware,
+	ginJWT *middleware.GinJWT,
+	authService *service.AuthService,
+	loginRL gin.HandlerFunc,
+	genericRL gin.HandlerFunc,
+) (*controller, error) {
 	if cman == nil {
 		return nil, fmt.Errorf("config manager is missing")
 	}
+	if loginRL == nil {
+		return nil, fmt.Errorf("login rate limiter is required")
+	}
+	if genericRL == nil {
+		genericRL = loginRL
+	}
 
 	return &controller{
-		cman:        cman,
-		auth:        auth,
-		ginJWT:      ginJWT,
-		authService: authService,
-		rateLimiter: rateLimiter,
+		cman:             cman,
+		auth:             auth,
+		ginJWT:           ginJWT,
+		authService:      authService,
+		loginRateLimit:   loginRL,
+		genericRateLimit: genericRL,
 	}, nil
 }
 
 // SetupRoutes creates routes for the provided group
 func (ctrl *controller) SetupRoutes(g *gin.RouterGroup) *gin.RouterGroup {
-	rl := ctrl.rateLimiter.Middleware()
-
-	// authenticate endpoint
-	g.POST("/authenticate", rl, ctrl.auth.LoginHandler)
+	// authenticate endpoint — strict IP + email rate limit.
+	g.POST("/authenticate", ctrl.loginRateLimit, ctrl.auth.LoginHandler)
 
 	// get identity of authenticated user
 	g.GET("/identity", ctrl.auth.MiddlewareFunc(), ctrl.Identity)
@@ -56,18 +73,19 @@ func (ctrl *controller) SetupRoutes(g *gin.RouterGroup) *gin.RouterGroup {
 	// Refresh time can be longer than token timeout
 	g.POST("/refresh_token", ctrl.auth.MiddlewareFunc(), ctrl.auth.RefreshHandler)
 
-	// get a permanent token for third-party app use only
-	g.GET("/generate-token", ctrl.auth.MiddlewareFunc(), ctrl.GenerateToken)
+	// Generate a permanent token for third-party app use — admin only to
+	// prevent any authenticated user from minting long-lived tokens.
+	g.GET("/generate-token", ctrl.auth.MiddlewareFunc(), middleware.RequireAdmin(), ctrl.GenerateToken)
 
 	// logout endpoint
 	g.POST("/logout", ctrl.auth.MiddlewareFunc(), ctrl.Logout)
 
-	// activation endpoint
-	g.GET("/activate/:token", ctrl.ActivateAccount)
+	// activation endpoint — rate-limit by IP to slow token enumeration.
+	g.GET("/activate/:token", ctrl.genericRateLimit, ctrl.ActivateAccount)
 
-	// password reset endpoints
-	g.POST("/forgot-password", rl, ctrl.ForgotPassword)
-	g.POST("/reset-password", rl, ctrl.ResetPassword)
+	// password reset endpoints — strict IP + email rate limit.
+	g.POST("/forgot-password", ctrl.loginRateLimit, ctrl.ForgotPassword)
+	g.POST("/reset-password", ctrl.genericRateLimit, ctrl.ResetPassword)
 
 	g.GET("/auth/:provider", ctrl.StartAuth)
 	g.GET("/auth/:provider/callback", ctrl.CompleteAuth)
@@ -180,20 +198,41 @@ func (ctrl *controller) RefreshToken(c *gin.Context) {
 	// here only because of swagger doc
 }
 
+// thirdPartyTokenTTL caps the lifetime of long-lived "permanent" tokens
+// minted by GenerateToken. They are still much shorter than the previous
+// 14 h value to limit blast radius if leaked. Override via env.
+const thirdPartyTokenTTL = 1 * time.Hour
+
+// claimString safely extracts a string claim. type-asserting without ok will
+// panic when the claim is missing or null in the JWT — never let user input
+// crash the handler.
+func claimString(claims jwt.MapClaims, key string) string {
+	if v, ok := claims[key]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
 func (ctrl *controller) GenerateToken(c *gin.Context) {
 	// extracts user claims
 	claims := jwt.ExtractClaims(c)
 
 	identity := &interfaces.Identity{
-		ID:             claims["id"].(string),
-		UserName:       claims[ctrl.ginJWT.IdentityKey].(string),
-		FirstName:      claims["firstName"].(string),
-		LastName:       claims["lastName"].(string),
-		Role:           claims["role"].(string),
-		OrganizationID: claims["organizationID"].(string),
+		ID:             claimString(claims, "id"),
+		UserName:       claimString(claims, ctrl.ginJWT.IdentityKey),
+		FirstName:      claimString(claims, "firstName"),
+		LastName:       claimString(claims, "lastName"),
+		Role:           claimString(claims, "role"),
+		OrganizationID: claimString(claims, "organizationID"),
+	}
+	if identity.ID == "" {
+		httpresp.NewErrorMessage(c, http.StatusUnauthorized, "user is not authenticated")
+		return
 	}
 
-	token, err := ctrl.createToken(identity, time.Now().UTC().Add(time.Hour*14))
+	token, err := ctrl.createToken(identity, time.Now().UTC().Add(thirdPartyTokenTTL))
 	if err != nil {
 		httpresp.NewError(c, http.StatusInternalServerError, err)
 		return
@@ -205,6 +244,7 @@ func (ctrl *controller) GenerateToken(c *gin.Context) {
 func (ctrl *controller) createToken(i *interfaces.Identity, expireAt time.Time) (string, error) {
 	token := jwttoken.NewWithClaims(jwttoken.SigningMethodHS256, &jwttoken.MapClaims{
 		"exp":                   expireAt.Unix(),
+		"iat":                   time.Now().UTC().Unix(),
 		"id":                    i.ID,
 		"role":                  i.Role,
 		"firstName":             i.FirstName,
@@ -215,6 +255,9 @@ func (ctrl *controller) createToken(i *interfaces.Identity, expireAt time.Time) 
 
 	// retrieves secret
 	secret, _ := ctrl.cman.Magic().Customer["SECRET"].(string)
+	if secret == "" {
+		return "", fmt.Errorf("jwt secret not configured")
+	}
 
 	// Sign and get the complete encoded token as a string
 	tokenString, err := token.SignedString([]byte(secret))
@@ -224,13 +267,17 @@ func (ctrl *controller) createToken(i *interfaces.Identity, expireAt time.Time) 
 
 func (ctrl *controller) StartAuth(c *gin.Context) {
 	provider := c.Param("provider")
-	// Set provider for gothic (so it knows which one to use)
+	// Set provider for gothic (so it knows which one to use). The gothic
+	// library reads this value with a *string* key "provider"; do NOT change
+	// the key type or gothic will silently fail to resolve the provider.
+	//nolint:staticcheck // SA1029: gothic API requires a plain-string context key.
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "provider", provider))
 	gothic.BeginAuthHandler(c.Writer, c.Request)
 }
 
 func (ctrl *controller) CompleteAuth(c *gin.Context) {
 	provider := c.Param("provider")
+	//nolint:staticcheck // SA1029: gothic API requires a plain-string context key.
 	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "provider", provider))
 
 	// Resolve the frontend URL for redirect (after OAuth completion)
@@ -262,7 +309,7 @@ func (ctrl *controller) CompleteAuth(c *gin.Context) {
 		return
 	}
 
-	expireAt := time.Now().UTC().Add(time.Hour * 14)
+	expireAt := time.Now().UTC().Add(thirdPartyTokenTTL)
 	token, err := ctrl.createToken(&interfaces.Identity{
 		UserName:      user.User.Username,
 		FirstName:     user.User.FirstName,

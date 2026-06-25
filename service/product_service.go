@@ -118,9 +118,7 @@ func (ps *ProductService) Get(ctx context.Context, id string) (*interfaces.Produ
 		}
 		return nil, err
 	}
-	go func() {
-		_ = ps.store.IncrementViewCount(context.Background(), id)
-	}()
+	ps.bumpViewCount(ctx, id)
 	return product, nil
 }
 
@@ -133,10 +131,21 @@ func (ps *ProductService) GetBySlug(ctx context.Context, slug string) (*interfac
 		}
 		return nil, err
 	}
-	go func(id string) {
-		_ = ps.store.IncrementViewCount(context.Background(), id)
-	}(product.ID.String())
+	ps.bumpViewCount(ctx, product.ID.String())
 	return product, nil
+}
+
+// bumpViewCount increments the product view counter. The write is best-effort
+// and runs inline on the request context: failure is logged but does not
+// surface to the caller. Previously we launched an orphan goroutine with a
+// detached context.Background(), which leaked goroutines under load and
+// silenced every error. If the cost ever becomes a concern, batch the writes
+// behind a buffered channel owned by a single worker.
+func (ps *ProductService) bumpViewCount(ctx context.Context, id string) {
+	if err := ps.store.IncrementViewCount(ctx, id); err != nil {
+		ps.logger.WithError(err).WithField("product_id", id).
+			Warn("Failed to increment product view count")
+	}
 }
 
 // List returns paginated, filtered products

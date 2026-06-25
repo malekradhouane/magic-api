@@ -35,7 +35,9 @@ func NewUserStore() (*UserStore, error) {
 	if theUserStore != nil {
 		return theUserStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	theUserStore = &UserStore{
 		Client: client,
 	}
@@ -55,7 +57,7 @@ func (us *UserStore) CreateUser(ctx context.Context, user *interfaces.User, comp
 	}
 
 	// Actually insert the user into the database
-	if err := us.session.GetDB().Create(user).Error; err != nil {
+	if err := us.session.GetDB().WithContext(ctx).Create(user).Error; err != nil {
 		if isEmailDuplicateError(wrapPgError(err)) {
 			return nil, errs.ErrEmailTaken
 		}
@@ -68,7 +70,7 @@ func (us *UserStore) CreateUser(ctx context.Context, user *interfaces.User, comp
 // Get retrieves a user by ID
 func (us *UserStore) Get(ctx context.Context, id string) (*interfaces.User, error) {
 	u := new(interfaces.User)
-	err := us.session.GetDB().Model(&interfaces.User{}).Where("id = ?", id).Take(u).Error
+	err := us.session.GetDB().WithContext(ctx).Model(&interfaces.User{}).Where("id = ?", id).Take(u).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNoSuchEntity
@@ -82,7 +84,7 @@ func (us *UserStore) Get(ctx context.Context, id string) (*interfaces.User, erro
 // GetUsers lists all users
 func (us *UserStore) GetUsers(ctx context.Context) ([]*interfaces.User, error) {
 	var users []*interfaces.User
-	if err := us.session.GetDB().Find(&users).Error; err != nil {
+	if err := us.session.GetDB().WithContext(ctx).Find(&users).Error; err != nil {
 		return nil, fmt.Errorf("failed to get users: %w", err)
 	}
 	return users, nil
@@ -91,7 +93,7 @@ func (us *UserStore) GetUsers(ctx context.Context) ([]*interfaces.User, error) {
 // GetUsersByRole lists users filtered by role
 func (us *UserStore) GetUsersByRole(ctx context.Context, role string) ([]*interfaces.User, error) {
 	var users []*interfaces.User
-	if err := us.session.GetDB().Where("role = ?", role).Find(&users).Error; err != nil {
+	if err := us.session.GetDB().WithContext(ctx).Where("role = ?", role).Find(&users).Error; err != nil {
 		return nil, fmt.Errorf("failed to get users by role: %w", err)
 	}
 	return users, nil
@@ -100,7 +102,7 @@ func (us *UserStore) GetUsersByRole(ctx context.Context, role string) ([]*interf
 // IsEmailTaken returns whether an email already exists
 func (us *UserStore) IsEmailTaken(ctx context.Context, email string) (bool, error) {
 	var count int64
-	if err := us.session.GetDB().
+	if err := us.session.GetDB().WithContext(ctx).
 		Model(&interfaces.User{}).
 		Where("email = ?", email).
 		Count(&count).Error; err != nil {
@@ -112,7 +114,7 @@ func (us *UserStore) IsEmailTaken(ctx context.Context, email string) (bool, erro
 // GetUserByEmail retrieves a user by email
 func (us *UserStore) GetUserByEmail(ctx context.Context, email string) (*interfaces.User, error) {
 	u := new(interfaces.User)
-	err := us.session.GetDB().Model(&interfaces.User{}).Where("email = ?", email).Take(u).Error
+	err := us.session.GetDB().WithContext(ctx).Model(&interfaces.User{}).Where("email = ?", email).Take(u).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNoSuchEntity
@@ -125,7 +127,7 @@ func (us *UserStore) GetUserByEmail(ctx context.Context, email string) (*interfa
 // FindByEmailAndProvider retrieves a user by email and provider
 func (us *UserStore) FindByEmailAndProvider(ctx context.Context, email string, provider string) (*interfaces.User, error) {
 	u := new(interfaces.User)
-	err := us.session.GetDB().
+	err := us.session.GetDB().WithContext(ctx).
 		Model(&interfaces.User{}).
 		Where("email = ? AND provider = ?", email, provider).
 		Take(u).Error
@@ -141,7 +143,7 @@ func (us *UserStore) FindByEmailAndProvider(ctx context.Context, email string, p
 // Authenticate verifies credentials and returns the user
 func (us *UserStore) Authenticate(ctx context.Context, login *interfaces.Credential) (*interfaces.User, error) {
 	user := new(interfaces.User)
-	err := us.session.GetDB().Model(&interfaces.User{}).Where("username = ?", login.Username).Take(user).Error
+	err := us.session.GetDB().WithContext(ctx).Model(&interfaces.User{}).Where("username = ?", login.Username).Take(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNoSuchEntity
@@ -163,7 +165,7 @@ func (us *UserStore) UpdateUser(ctx context.Context, id string, user *interfaces
 		return nil, errs.ErrUserIDMissing
 	}
 
-	err := withTransaction(us.session.GetDB(), func(tx *gorm.DB) error {
+	err := withTransaction(us.session.GetDB().WithContext(ctx), func(tx *gorm.DB) error {
 		// Ensure user exists
 		existing := new(interfaces.User)
 		if err := tx.Where("id = ?", id).Take(existing).Error; err != nil {
@@ -186,7 +188,7 @@ func (us *UserStore) UpdateUser(ctx context.Context, id string, user *interfaces
 
 	// Reload
 	updated := new(interfaces.User)
-	if err := us.session.GetDB().Where("id = ?", id).Take(updated).Error; err != nil {
+	if err := us.session.GetDB().WithContext(ctx).Where("id = ?", id).Take(updated).Error; err != nil {
 		return nil, fmt.Errorf("failed to reload user: %w", err)
 	}
 	return updated, nil
@@ -201,7 +203,7 @@ func (us *UserStore) UpdateUserFields(ctx context.Context, id string, fields map
 		return nil, errs.ErrEmptyUpdate
 	}
 
-	db := us.session.GetDB()
+	db := us.session.GetDB().WithContext(ctx)
 	if err := db.Model(&interfaces.User{}).Where("id = ?", id).Take(&interfaces.User{}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNoSuchEntity
@@ -226,7 +228,7 @@ func (us *UserStore) DeleteUser(ctx context.Context, id string) error {
 		return errs.ErrUserIDMissing
 	}
 
-	return withTransaction(us.session.GetDB(), func(tx *gorm.DB) error {
+	return withTransaction(us.session.GetDB().WithContext(ctx), func(tx *gorm.DB) error {
 		var count int64
 		if err := tx.Model(&interfaces.User{}).Where("id = ?", id).Count(&count).Error; err != nil {
 			return fmt.Errorf("failed to check user existence: %w", err)
@@ -248,7 +250,7 @@ func (us *UserStore) CreateValidationToken(ctx context.Context, token *interface
 		return fmt.Errorf("validation token is nil")
 	}
 
-	db := us.session.GetDB()
+	db := us.session.GetDB().WithContext(ctx)
 	if err := db.Create(token).Error; err != nil {
 		return fmt.Errorf("failed to create validation token: %w", err)
 	}
@@ -262,7 +264,7 @@ func (us *UserStore) GetValidationToken(ctx context.Context, tokenValue string) 
 	}
 
 	var token interfaces.ValidationToken
-	db := us.session.GetDB()
+	db := us.session.GetDB().WithContext(ctx)
 	if err := db.Where("token = ?", tokenValue).First(&token).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNoSuchEntity
@@ -278,7 +280,7 @@ func (us *UserStore) DeleteValidationToken(ctx context.Context, tokenValue strin
 		return fmt.Errorf("token value is required")
 	}
 
-	db := us.session.GetDB()
+	db := us.session.GetDB().WithContext(ctx)
 	if err := db.Where("token = ?", tokenValue).Delete(&interfaces.ValidationToken{}).Error; err != nil {
 		return fmt.Errorf("failed to delete validation token: %w", err)
 	}

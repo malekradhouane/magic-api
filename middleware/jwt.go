@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"errors"
+	"os"
+	"strconv"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -12,6 +15,13 @@ import (
 	"github.com/malekradhouane/magic/store/types"
 	"github.com/malekradhouane/magic/utils/httpresp"
 )
+
+// ErrJWTSecretMissing is returned when no JWT secret is configured.
+var ErrJWTSecretMissing = errors.New("JWT secret is not configured: set MAGIC_CUSTOMER_SECRET or customer.SECRET in config")
+
+// ErrJWTSecretTooShort is returned when the configured JWT secret is shorter
+// than the NIST SP 800-131A recommendation of 32 bytes for HS256.
+var ErrJWTSecretTooShort = errors.New("JWT secret is too short (< 32 bytes): generate one with `openssl rand -base64 48`")
 
 type GinJWT struct {
 	cman        configmanager.ManagerContract
@@ -29,27 +39,65 @@ func NewGinJwt(cman configmanager.ManagerContract, userStore types.UserStore) (*
 	}, nil
 }
 
-// GinJwtMiddlewareHandler handles authentication
-func (x *GinJWT) MiddlewareHandler() *jwt.GinJWTMiddleware {
-	const defaultTimeout = 1 * time.Hour
+// Token TTL defaults. 15 minutes for access follows OWASP guidance for stateless
+// bearer tokens; the refresh window is longer so users do not need to re-enter
+// credentials between sessions.
+const (
+	defaultAccessTokenTTL = 15 * time.Minute
+	defaultRefreshWindow  = 7 * 24 * time.Hour
+)
 
+// envDuration parses an integer-of-seconds env var and returns the duration
+// or the fallback when the value is missing / invalid / non-positive.
+func envDuration(name string, fallback time.Duration) time.Duration {
+	v := os.Getenv(name)
+	if v == "" {
+		return fallback
+	}
+	secs, err := strconv.Atoi(v)
+	if err != nil || secs <= 0 {
+		return fallback
+	}
+	return time.Duration(secs) * time.Second
+}
+
+// ResolveSecret extracts the JWT signing secret from configuration and
+// validates it. Returns a typed error rather than terminating the process so
+// the caller in main() can decide whether to fail-fast.
+func (x *GinJWT) ResolveSecret() (string, error) {
 	customerConfig := x.cman.Magic().Customer
 
-	// retrieves secret — refuse to start with an empty or placeholder value.
 	// koanf lowercases env-var keys, so check both casings.
 	secret, _ := customerConfig["SECRET"].(string)
 	if secret == "" {
 		secret, _ = customerConfig["secret"].(string)
 	}
 	if secret == "" || secret == "change-me-in-production" {
-		logrus.Fatal("JWT secret is not configured. Set MAGIC_CUSTOMER_SECRET or customer.SECRET in config.")
+		return "", ErrJWTSecretMissing
+	}
+	if len(secret) < 32 {
+		return "", ErrJWTSecretTooShort
+	}
+	return secret, nil
+}
+
+// MiddlewareHandler builds the configured gin-jwt middleware. It returns an
+// error when the JWT secret cannot be resolved instead of terminating the
+// process; the caller in main() is expected to abort startup on error.
+func (x *GinJWT) MiddlewareHandler() (*jwt.GinJWTMiddleware, error) {
+	accessTTL := envDuration("MAGIC_JWT_ACCESS_TTL_SECONDS", defaultAccessTokenTTL)
+	refreshWindow := envDuration("MAGIC_JWT_REFRESH_TTL_SECONDS", defaultRefreshWindow)
+
+	secret, err := x.ResolveSecret()
+	if err != nil {
+		return nil, err
 	}
 
 	return &jwt.GinJWTMiddleware{
-		Realm:       "test zone",
+		Realm:       "magic",
 		Key:         []byte(secret),
-		Timeout:     defaultTimeout,
-		MaxRefresh:  defaultTimeout * 2,
+		Timeout:     accessTTL,
+		MaxRefresh:  refreshWindow,
 		IdentityKey: x.IdentityKey,
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(*interfaces.Identity); ok {
@@ -101,15 +149,11 @@ func (x *GinJWT) MiddlewareHandler() *jwt.GinJWTMiddleware {
 			if err := c.ShouldBind(&creds); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
-
 			return x.login(c, creds)
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if _, ok := data.(*interfaces.Identity); ok {
-				return true
-			}
-
-			return false
+			_, ok := data.(*interfaces.Identity)
+			return ok
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			httpresp.NewErrorMessage(c, code, message)
@@ -125,28 +169,14 @@ func (x *GinJWT) MiddlewareHandler() *jwt.GinJWTMiddleware {
 		LogoutResponse: func(c *gin.Context, code int) {
 			// handled by function Logout
 		},
-		// TokenLookup is a string in the form of "<source>:<name>" that is used
-		// to extract token from the request.
-		// Optional. Default value "header:Authorization".
-		// Possible values:
-		// - "header:<name>"
-		// - "query:<name>"
-		// - "cookie:<name>"
-		// - "param:<name>"
-		TokenLookup: "header:Authorization",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
-
-		// TokenHeadName is a string in the header. Default value is "Bearer"
+		TokenLookup:   "header:Authorization",
 		TokenHeadName: "Bearer",
-
-		// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
-		TimeFunc: time.Now,
-	}
+		TimeFunc:      time.Now,
+	}, nil
 }
 
 func (x *GinJWT) login(c *gin.Context, creds interfaces.Credential) (*interfaces.Identity, error) {
-	user, err := x.userStore.Authenticate(c, &creds)
+	user, err := x.userStore.Authenticate(c.Request.Context(), &creds)
 	if err != nil {
 		return nil, err
 	}
@@ -163,27 +193,27 @@ func (x *GinJWT) login(c *gin.Context, creds interfaces.Credential) (*interfaces
 	return identity, nil
 }
 
-// LoggerWithUsername logs the request with the username
+// LoggerWithUsername logs every HTTP request with the authenticated username
+// (or "unlogged request" when no JWT claims are attached).
+//
+// TODO: switch to slog (stdlib) once the codebase migration is complete; also
+// accept the logger as a constructor dependency instead of allocating one
+// per call.
 func (x *GinJWT) LoggerWithUsername() gin.HandlerFunc {
+	log := logrus.New()
 	return func(c *gin.Context) {
-		log := logrus.New()
-		// Start timer
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 
 		c.Next()
 
-		var loggedUser string
+		loggedUser := "unlogged request"
 		claims := jwt.ExtractClaims(c)
-
-		if username, isUserNameOK := claims[x.IdentityKey].(string); isUserNameOK {
+		if username, ok := claims[x.IdentityKey].(string); ok {
 			loggedUser = username
-		} else {
-			loggedUser = "unlogged request"
 		}
 
-		// Stop timer
 		end := time.Now()
 		latency := end.Sub(start)
 

@@ -37,7 +37,9 @@ func NewOrderStore() (*OrderStore, error) {
 	if theOrderStore != nil {
 		return theOrderStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	theOrderStore = &OrderStore{Client: client}
 
 	logrus.Info("OrderStore created")

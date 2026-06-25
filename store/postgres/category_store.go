@@ -35,7 +35,9 @@ func NewCategoryStore() (*CategoryStore, error) {
 	if theCategoryStore != nil {
 		return theCategoryStore, nil
 	}
-	MustClientInitialized(client)
+	if err := MustClientInitialized(client); err != nil {
+		return nil, err
+	}
 	theCategoryStore = &CategoryStore{Client: client}
 
 	logrus.Info("CategoryStore created")
