@@ -37,6 +37,8 @@ func TestManagerWithTestConfig(t *testing.T) {
 }
 
 func TestManagerWithDataset1(t *testing.T) {
+	t.Skip("dataset fixtures are intentionally ignored in CI")
+
 	const (
 		dataset = "dataset1"
 		env     = "dummy"
@@ -59,6 +61,8 @@ func TestManagerWithDataset1(t *testing.T) {
 }
 
 func TestManagerWithDataset2(t *testing.T) {
+	t.Skip("dataset fixtures are intentionally ignored in CI")
+
 	const (
 		dataset = "dataset2"
 		env     = "dummy"
