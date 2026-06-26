@@ -1,13 +1,18 @@
 # syntax=docker/dockerfile:1.4
 
 # STEP 1 -> Build stage.
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /project
 
 RUN apk add --no-cache make git
 
+# Pre-download dependencies for the main module
 COPY go.mod go.sum ./
 RUN go mod download
+
+# Pre-download dependencies for the storeinit submodule
+COPY cmd/_storeinit/go.mod cmd/_storeinit/go.sum ./cmd/_storeinit/
+RUN cd cmd/_storeinit && go mod download
 
 COPY . .
 RUN make

@@ -1,0 +1,57 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+  settings:
+    errcheck:
+      # defer x.Close() and the SSE Fprint calls are intentionally not checked.
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+  exclusions:
+    paths:
+      - docs
+      - bin
+      - cmd/_storeinit
+      - magic/configmanager/test
+    rules:
+      # Generated swagger docs include lots of noise
+      - path: docs/docs\.go
+        linters:
+          - errcheck
+          - staticcheck
+      # Test files: relax checks
+      - path: _test\.go
+        linters:
+          - errcheck
+          - staticcheck
+      # Skeleton/wiring code with intentional future placeholders.
+      - path: cmd/magic/setup\.go
+        linters:
+          - staticcheck
+      # External library API constraints (intentional patterns)
+      - linters:
+          - errcheck
+        text: "Error return value of `.*Close` is not checked"
+      - linters:
+          - errcheck
+        text: "Error return value of `as\\.userStore\\.DeleteValidationToken` is not checked"
+
+formatters:
+  enable:
+    - gofmt
+
+

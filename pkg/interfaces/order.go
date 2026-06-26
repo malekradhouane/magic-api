@@ -67,9 +67,9 @@ func (s *ShippingInfo) Scan(value interface{}) error {
 
 // Order represents a customer order (supports guest checkout via nullable UserID)
 type Order struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	CreatedAt   time.Time `gorm:"not null;default:now()" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"not null;default:now()" json:"updated_at"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	CreatedAt time.Time `gorm:"not null;default:now()" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;default:now()" json:"updated_at"`
 
 	OrderNumber string     `gorm:"type:varchar(50);uniqueIndex;not null" json:"order_number"`
 	UserID      *uuid.UUID `gorm:"type:uuid" json:"user_id,omitempty"`

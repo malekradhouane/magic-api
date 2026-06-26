@@ -47,10 +47,10 @@ func TestBuildProductDefaults(t *testing.T) {
 
 	product, _, sizes, colors, variants := imp.buildProduct(products[0], nil, used)
 
-	assert.Equal(t, "homme", product.Gender)                  // HOMME -> homme
-	assert.Equal(t, defaultCurrency, product.Currency)        // TND par défaut
-	assert.True(t, product.IsActive)                          // actif par défaut
-	assert.NotEmpty(t, product.Slug)                          // slug obligatoire généré
+	assert.Equal(t, "homme", product.Gender)           // HOMME -> homme
+	assert.Equal(t, defaultCurrency, product.Currency) // TND par défaut
+	assert.True(t, product.IsActive)                   // actif par défaut
+	assert.NotEmpty(t, product.Slug)                   // slug obligatoire généré
 	assert.NotNil(t, product.SKU)
 	assert.Equal(t, "CE26-MCH13", *product.SKU)
 	assert.Equal(t, []string{"E26"}, []string(product.Tags))

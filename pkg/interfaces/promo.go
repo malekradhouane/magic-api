@@ -15,9 +15,9 @@ const (
 
 // PromoCode represents a discount code
 type PromoCode struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	CreatedAt   time.Time `gorm:"not null;default:now()" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"not null;default:now()" json:"updated_at"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	CreatedAt time.Time `gorm:"not null;default:now()" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;default:now()" json:"updated_at"`
 
 	Code        string `gorm:"type:varchar(50);uniqueIndex;not null" json:"code"`
 	Description string `gorm:"type:text" json:"description,omitempty"`

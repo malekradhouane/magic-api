@@ -513,13 +513,16 @@ func (rr *ResourcesRegistry) setupGatekeeper() error {
 		return fmt.Errorf("failed to create enforcer: %w", err)
 	}
 	// Load endpoint from DB dynamically
-	err = enforcer.LoadPolicy()
-	if err != nil {
+	if err := enforcer.LoadPolicy(); err != nil {
 		return fmt.Errorf("failed to load policy: %w", err)
 	}
+	policies, err := enforcer.GetPolicy()
+	if err != nil {
+		return fmt.Errorf("failed to read casbin policies: %w", err)
+	}
+	rr.logger.WithField("policies", len(policies)).Info("Casbin enforcer loaded")
 
 	rr.gatekeeper.casbin = enforcer
-	rr.logger.WithField("policies", len(enforcer.GetPolicy())).Info("Casbin enforcer loaded")
 
 	oidcConfig := rr.cman.Magic().Auth.OIDC
 	cookie := rr.cman.Magic().Auth.Cookie

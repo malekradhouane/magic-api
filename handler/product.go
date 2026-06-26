@@ -266,10 +266,11 @@ func (h *ProductHandler) ImportProducts(c *gin.Context) {
 		return
 	}
 
-	gender := c.PostForm("gender")
-	if gender == "" {
-		gender = "homme" // default gender
-	}
+	// Note: the optional "gender" form field is currently not propagated to the
+	// importer because ImportFromCSV does not accept it. Keeping the
+	// PostForm read here would create a dead-store. Re-enable when the
+	// importer signature accepts a default gender.
+	_ = c.PostForm("gender")
 
 	// Create product importer
 	importer := service.NewProductImporter(h.service, h.categories, nil)

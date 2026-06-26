@@ -40,13 +40,13 @@ type OrderConfirmationData struct {
 
 // OrderEmailItem is a line item in order emails.
 type OrderEmailItem struct {
-	Name     string
-	Size     string
-	Color    string
-	Quantity int
+	Name      string
+	Size      string
+	Color     string
+	Quantity  int
 	LineTotal string
-	HasSize  bool
-	HasColor bool
+	HasSize   bool
+	HasColor  bool
 }
 
 // OrderShippedData is passed to the order shipped email template.

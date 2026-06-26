@@ -25,7 +25,7 @@ type Product struct {
 	Entretien       string `gorm:"type:text" json:"entretien,omitempty"`
 
 	// Pricing
-	Price           float64 `gorm:"type:numeric(10,2);not null" json:"price"`
+	Price           float64  `gorm:"type:numeric(10,2);not null" json:"price"`
 	OriginalPrice   *float64 `gorm:"type:numeric(10,2)" json:"original_price,omitempty"`
 	DiscountPercent int      `gorm:"->" json:"discount_percent"` // computed column, read-only
 	Currency        string   `gorm:"type:varchar(3);not null;default:'TND'" json:"currency"`

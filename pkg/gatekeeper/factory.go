@@ -99,10 +99,10 @@ func NewGateKeeper(params NewGateKeeperParams) (*feature, error) {
 	if feat.cookieConfig.Domain == "" {
 		feat.cookieConfig.Domain = "app.example.com"
 	}
-	if feat.cookieConfig.Secure == false {
+	if !feat.cookieConfig.Secure {
 		feat.cookieConfig.Secure = true
 	}
-	if feat.cookieConfig.HTTPOnly == false {
+	if !feat.cookieConfig.HTTPOnly {
 		feat.cookieConfig.HTTPOnly = true
 	}
 	if feat.cookieConfig.SameSite == "" {

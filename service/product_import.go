@@ -50,11 +50,11 @@ const (
 // Valeurs par défaut appliquées lorsque le CSV ne porte pas une donnée
 // obligatoire pour la structure Product.
 const (
-	defaultGender      = "homme"            // ce fichier ne concerne que les hommes
-	defaultHex         = "#000000"          // couleur de repli (Hex est obligatoire)
-	defaultCurrency    = "TND"              // devise par défaut du modèle
-	defaultProductName = "Produit homme"    // nom de repli si le libellé est vide
-	defaultCategoryFam = "vetements"        // catégorie de repli pour une famille inconnue
+	defaultGender      = "homme"         // ce fichier ne concerne que les hommes
+	defaultHex         = "#000000"       // couleur de repli (Hex est obligatoire)
+	defaultCurrency    = "TND"           // devise par défaut du modèle
+	defaultProductName = "Produit homme" // nom de repli si le libellé est vide
+	defaultCategoryFam = "vetements"     // catégorie de repli pour une famille inconnue
 )
 
 // familleToCategorySlug fait correspondre la "Famille" du CSV au slug de la

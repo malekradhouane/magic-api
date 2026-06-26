@@ -9,10 +9,10 @@ import (
 
 // Category represents a product category (abayas, caftans, djellabas, accessoires, ...)
 type Category struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	CreatedAt   time.Time  `gorm:"not null;default:now()" json:"created_at"`
-	UpdatedAt   time.Time  `gorm:"not null;default:now()" json:"updated_at"`
-	DeletedAt   *time.Time `gorm:"index" json:"-"`
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	CreatedAt time.Time  `gorm:"not null;default:now()" json:"created_at"`
+	UpdatedAt time.Time  `gorm:"not null;default:now()" json:"updated_at"`
+	DeletedAt *time.Time `gorm:"index" json:"-"`
 
 	Slug        string     `gorm:"type:varchar(100);uniqueIndex;not null" json:"slug"`
 	Name        string     `gorm:"type:varchar(150);not null" json:"name"`
@@ -22,7 +22,7 @@ type Category struct {
 	Position    int        `gorm:"not null;default:0" json:"position"`
 	IsActive    bool       `gorm:"not null;default:true" json:"is_active"`
 
-	Metadata    JSONMap    `gorm:"type:jsonb" json:"metadata,omitempty"`
+	Metadata JSONMap `gorm:"type:jsonb" json:"metadata,omitempty"`
 
 	// Children holds direct sub-categories when the tree is loaded (parents only).
 	Children []*Category `gorm:"foreignKey:ParentID" json:"children,omitempty"`

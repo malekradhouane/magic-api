@@ -26,7 +26,7 @@ type Client struct {
 func (c *Client) Initialise() error {
 	log := logrus.New()
 
-	portAsString := fmt.Sprintf("%d", c.ConnParams.Port)
+	portAsString := fmt.Sprintf("%d", c.Port)
 
 	// Allow overriding SSL mode via environment variable. Defaults to "disable" for local dev.
 	sslmode := os.Getenv("MAGIC_PG_SSLMODE")
@@ -36,10 +36,10 @@ func (c *Client) Initialise() error {
 
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
-		c.ConnParams.Host,
-		c.ConnParams.UserName,
-		url.QueryEscape(c.ConnParams.UserPassword),
-		c.ConnParams.Database,
+		c.Host,
+		c.UserName,
+		url.QueryEscape(c.UserPassword),
+		c.Database,
 		portAsString,
 		sslmode,
 	)
@@ -55,13 +55,13 @@ func (c *Client) Initialise() error {
 	log.Infoln("PostgreSQL Client: GORM session created.")
 
 	config := &Config{
-		AccessControlEnabled: c.ConnParams.AuthWithUserAndPassword,
+		AccessControlEnabled: c.AuthWithUserAndPassword,
 		Database: Database{
-			Name:     c.ConnParams.Database,
-			Username: c.ConnParams.UserName,
-			Password: c.ConnParams.UserPassword,
+			Name:     c.Database,
+			Username: c.UserName,
+			Password: c.UserPassword,
 		},
-		Host: c.ConnParams.Host,
+		Host: c.Host,
 		Port: portAsString,
 	}
 

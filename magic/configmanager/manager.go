@@ -1,7 +1,5 @@
 package configmanager
 
-import ()
-
 // Contracts
 
 type ManagerContract interface {

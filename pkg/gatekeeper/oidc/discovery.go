@@ -198,15 +198,11 @@ func (p *DiscoveryOIDCProvider) BeginAuth(ctx context.Context, state, redirectUR
 
 	// Merge extra params
 	authParams := make(map[string]string)
-	if p.extraAuthParams != nil {
-		for k, v := range p.extraAuthParams {
-			authParams[k] = v
-		}
+	for k, v := range p.extraAuthParams {
+		authParams[k] = v
 	}
-	if extraParams != nil {
-		for k, v := range extraParams {
-			authParams[k] = v
-		}
+	for k, v := range extraParams {
+		authParams[k] = v
 	}
 
 	// Add PKCE parameters

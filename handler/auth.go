@@ -9,8 +9,8 @@ import (
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
-	jwttoken "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	jwttoken "github.com/golang-jwt/jwt/v5"
 	"github.com/markbates/goth/gothic"
 
 	"github.com/malekradhouane/magic/api"
@@ -242,7 +242,7 @@ func (ctrl *controller) GenerateToken(c *gin.Context) {
 }
 
 func (ctrl *controller) createToken(i *interfaces.Identity, expireAt time.Time) (string, error) {
-	token := jwttoken.NewWithClaims(jwttoken.SigningMethodHS256, &jwttoken.MapClaims{
+	token := jwttoken.NewWithClaims(jwttoken.SigningMethodHS256, jwttoken.MapClaims{
 		"exp":                   expireAt.Unix(),
 		"iat":                   time.Now().UTC().Unix(),
 		"id":                    i.ID,

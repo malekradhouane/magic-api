@@ -28,7 +28,7 @@ func TestResourcesRegistry_mergeWithEnviron(t *testing.T) {
 		t.Fatal("cannot found all expected variables")
 	}
 
-	// Test with variable expansion
+	// Test with variable expansion (ENVIRONMENT is still set from above)
 
 	userEnv = []string{"STOREINIT_CONFIG=/"}
 	newEnv = rr.mergeWithEnviron(userEnv)
@@ -37,7 +37,7 @@ func TestResourcesRegistry_mergeWithEnviron(t *testing.T) {
 		switch env {
 		case "STOREINIT_CONFIG=/":
 			found++
-		case "ENVIRONMENT=":
+		case "ENVIRONMENT=" + warehouse:
 			found++
 		}
 	}

@@ -30,18 +30,18 @@ func TestNormalize_Valid(t *testing.T) {
 
 func TestNormalize_Invalid(t *testing.T) {
 	invalid := []string{
-		"",                  // empty
-		"   ",               // blank
-		"1234567",           // too short
-		"123456789",         // too long (9 digits, no country)
-		"60123456",          // invalid prefix 6
-		"80123456",          // invalid prefix 8
-		"10123456",          // invalid prefix 1
-		"+33612345678",      // non-TN country code
-		"abcdefgh",          // not digits
-		"+216 2012345",      // 7 local digits only
-		"+216201234567",     // 9 local digits
-		"00216 6012 3456",   // invalid prefix with country code
+		"",                // empty
+		"   ",             // blank
+		"1234567",         // too short
+		"123456789",       // too long (9 digits, no country)
+		"60123456",        // invalid prefix 6
+		"80123456",        // invalid prefix 8
+		"10123456",        // invalid prefix 1
+		"+33612345678",    // non-TN country code
+		"abcdefgh",        // not digits
+		"+216 2012345",    // 7 local digits only
+		"+216201234567",   // 9 local digits
+		"00216 6012 3456", // invalid prefix with country code
 	}
 	for _, in := range invalid {
 		if _, err := Normalize(in); err == nil {
