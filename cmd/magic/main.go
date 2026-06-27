@@ -149,12 +149,14 @@ func main() {
 		frontendURL = "http://localhost:3000"
 	}
 	addressService := service.NewAddressService(store.Addresses(), rr.logger)
+	settingsService := service.NewSettingsService(store.Settings(), rr.logger)
 	orderService := service.NewOrderService(
 		store.Orders(),
 		store.Products(),
 		promoService,
 		store.Users(),
 		addressService,
+		settingsService,
 		rr.mailer,
 		mailjetCfg.FromName,
 		mailjetCfg.FromEmail,
@@ -204,9 +206,13 @@ func main() {
 	promoHandler.SetupRoutes(api)
 
 	// Dashboard statistics (admin only)
-	statsService := service.NewStatsService(store.Stats(), rr.logger)
+	statsService := service.NewStatsService(store.Stats(), settingsService, rr.logger)
 	statsHandler := handler.NewStatsHandler(statsService, authMiddleware.MiddlewareFunc())
 	statsHandler.SetupRoutes(api)
+
+	// Application settings (admin only)
+	settingsHandler := handler.NewSettingsHandler(settingsService, authMiddleware.MiddlewareFunc())
+	settingsHandler.SetupRoutes(api)
 
 	// Uploads (presigned URLs to Cloudflare R2). r2Client may be nil if R2
 	// is not configured; the handler will then return 503 to clients.

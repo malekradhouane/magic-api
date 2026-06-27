@@ -24,16 +24,35 @@ const (
 
 // StatsService builds the admin dashboard overview.
 type StatsService struct {
-	store  types.StatsStore
-	logger *logrus.Logger
+	store           types.StatsStore
+	settingsService *SettingsService
+	logger          *logrus.Logger
 }
 
 // NewStatsService constructs a StatsService
-func NewStatsService(store types.StatsStore, logger *logrus.Logger) *StatsService {
+func NewStatsService(store types.StatsStore, settingsService *SettingsService, logger *logrus.Logger) *StatsService {
 	if logger == nil {
 		logger = logrus.New()
 	}
-	return &StatsService{store: store, logger: logger}
+	return &StatsService{store: store, settingsService: settingsService, logger: logger}
+}
+
+// getLowStockThreshold reads the value from DB settings, falling back to the
+// compile-time default.
+func (s *StatsService) getLowStockThreshold(ctx context.Context) int {
+	if s.settingsService == nil {
+		return LowStockThreshold
+	}
+	setting, err := s.settingsService.GetByKey(ctx, "notifications")
+	if err != nil || setting == nil {
+		return LowStockThreshold
+	}
+	if v, ok := setting.Value["low_stock_threshold"]; ok {
+		if f, ok := v.(float64); ok && f > 0 {
+			return int(f)
+		}
+	}
+	return LowStockThreshold
 }
 
 // Overview assembles the full dashboard payload for the last `days` days.
@@ -57,8 +76,10 @@ func (s *StatsService) Overview(ctx context.Context, days int) (*api.StatsOvervi
 	// All sections are independent reads → fetch them concurrently.
 	g, gctx := errgroup.WithContext(ctx)
 
+	lowStock := s.getLowStockThreshold(ctx)
+
 	g.Go(func() error {
-		k, err := s.store.Kpis(gctx, since, prevSince, since, LowStockThreshold)
+		k, err := s.store.Kpis(gctx, since, prevSince, since, lowStock)
 		if err != nil {
 			return err
 		}
@@ -99,7 +120,7 @@ func (s *StatsService) Overview(ctx context.Context, days int) (*api.StatsOvervi
 		return nil
 	})
 	g.Go(func() error {
-		rows, err := s.store.StockAlerts(gctx, LowStockThreshold, 20)
+		rows, err := s.store.StockAlerts(gctx, lowStock, 20)
 		if err != nil {
 			return err
 		}

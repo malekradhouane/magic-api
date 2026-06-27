@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	// FreeShippingThreshold: livraison gratuite au-delà
-	FreeShippingThreshold = 150.0
-	// StandardShippingFee in TND
-	StandardShippingFee = 8.0
+	// DefaultFreeShippingThreshold: livraison gratuite au-delà (fallback)
+	DefaultFreeShippingThreshold = 150.0
+	// DefaultStandardShippingFee in TND (fallback)
+	DefaultStandardShippingFee = 8.0
 	// OrderNumberPrefix: AFR-YYYYMMDD-XXXX
 	OrderNumberPrefix = "AFR"
 )
@@ -35,17 +35,18 @@ type OrderNotifier interface {
 
 // OrderService handles order business logic
 type OrderService struct {
-	orderStore     types.OrderStore
-	productStore   types.ProductStore
-	promoService   *PromoService
-	userStore      types.UserStore
-	addressService *AddressService
-	mailer         mailer.Mailer
-	mailFromName   string
-	mailFromEmail  string
-	frontendURL    string
-	logger         *logrus.Logger
-	notifier       OrderNotifier
+	orderStore      types.OrderStore
+	productStore    types.ProductStore
+	promoService    *PromoService
+	userStore       types.UserStore
+	addressService  *AddressService
+	settingsService *SettingsService
+	mailer          mailer.Mailer
+	mailFromName    string
+	mailFromEmail   string
+	frontendURL     string
+	logger          *logrus.Logger
+	notifier        OrderNotifier
 }
 
 // SetNotifier wires an optional real-time notifier (kept out of the constructor
@@ -61,6 +62,7 @@ func NewOrderService(
 	promoService *PromoService,
 	userStore types.UserStore,
 	addressService *AddressService,
+	settingsService *SettingsService,
 	m mailer.Mailer,
 	mailFromName, mailFromEmail, frontendURL string,
 	logger *logrus.Logger,
@@ -75,16 +77,17 @@ func NewOrderService(
 		mailFromEmail = "noreply@magic.fr"
 	}
 	return &OrderService{
-		orderStore:     orderStore,
-		productStore:   productStore,
-		promoService:   promoService,
-		userStore:      userStore,
-		addressService: addressService,
-		mailer:         m,
-		mailFromName:   mailFromName,
-		mailFromEmail:  mailFromEmail,
-		frontendURL:    frontendURL,
-		logger:         logger,
+		orderStore:      orderStore,
+		productStore:    productStore,
+		promoService:    promoService,
+		userStore:       userStore,
+		addressService:  addressService,
+		settingsService: settingsService,
+		mailer:          m,
+		mailFromName:    mailFromName,
+		mailFromEmail:   mailFromEmail,
+		frontendURL:     frontendURL,
+		logger:          logger,
 	}
 }
 
@@ -104,7 +107,7 @@ func (os *OrderService) Create(ctx context.Context, req *api.CreateOrderRequest,
 		return nil, err
 	}
 
-	shippingFee := computeShippingFee(subtotal)
+	shippingFee := os.computeShippingFee(ctx, subtotal)
 
 	discount, appliedPromo, promoCodeStr, err := os.applyPromoCode(ctx, req.PromoCode, subtotal, userID)
 	if err != nil {
@@ -210,12 +213,78 @@ func pickMainImage(images []interfaces.ProductImage) string {
 	return fallback
 }
 
-// computeShippingFee waives the shipping cost above the free-shipping threshold.
-func computeShippingFee(subtotal float64) float64 {
-	if subtotal >= FreeShippingThreshold {
+// notifDefaults holds the resolved notification flags for a single request.
+type notifDefaults struct {
+	orderEmailEnabled bool
+	notifyNewOrder    bool
+	notifyLowStock    bool
+	lowStockThreshold int
+}
+
+// getNotificationSettings reads the "notifications" settings row, falling back
+// to safe defaults (all enabled) if the row is missing or malformed.
+func (os *OrderService) getNotificationSettings(ctx context.Context) notifDefaults {
+	d := notifDefaults{
+		orderEmailEnabled: true,
+		notifyNewOrder:    true,
+		notifyLowStock:    true,
+		lowStockThreshold: 5,
+	}
+	if os.settingsService == nil {
+		return d
+	}
+	s, err := os.settingsService.GetByKey(ctx, "notifications")
+	if err != nil || s == nil {
+		return d
+	}
+	if v, ok := s.Value["order_email_enabled"]; ok {
+		if b, ok := v.(bool); ok {
+			d.orderEmailEnabled = b
+		}
+	}
+	if v, ok := s.Value["notify_new_order"]; ok {
+		if b, ok := v.(bool); ok {
+			d.notifyNewOrder = b
+		}
+	}
+	if v, ok := s.Value["notify_low_stock"]; ok {
+		if b, ok := v.(bool); ok {
+			d.notifyLowStock = b
+		}
+	}
+	if v, ok := s.Value["low_stock_threshold"]; ok {
+		if f, ok := v.(float64); ok && f > 0 {
+			d.lowStockThreshold = int(f)
+		}
+	}
+	return d
+}
+
+// computeShippingFee reads shipping settings from the DB, falling back to
+// hardcoded defaults if the settings row is missing or malformed.
+func (os *OrderService) computeShippingFee(ctx context.Context, subtotal float64) float64 {
+	threshold := DefaultFreeShippingThreshold
+	fee := DefaultStandardShippingFee
+
+	if os.settingsService != nil {
+		if s, err := os.settingsService.GetByKey(ctx, "shipping"); err == nil && s != nil {
+			if v, ok := s.Value["free_shipping_threshold"]; ok {
+				if f, ok := v.(float64); ok {
+					threshold = f
+				}
+			}
+			if v, ok := s.Value["default_shipping_cost"]; ok {
+				if f, ok := v.(float64); ok {
+					fee = f
+				}
+			}
+		}
+	}
+
+	if threshold > 0 && subtotal >= threshold {
 		return 0
 	}
-	return StandardShippingFee
+	return fee
 }
 
 // applyPromoCode validates the promo code (if any) and returns the discount,
@@ -320,9 +389,12 @@ func (os *OrderService) afterOrderCreated(
 		}
 	}
 
-	os.sendOrderConfirmationEmailAsync(created)
-
-	if os.notifier != nil {
+	// Check notification settings before sending email / SSE push.
+	notifSettings := os.getNotificationSettings(ctx)
+	if notifSettings.orderEmailEnabled {
+		os.sendOrderConfirmationEmailAsync(created)
+	}
+	if notifSettings.notifyNewOrder && os.notifier != nil {
 		os.notifier.NotifyNewOrder(created)
 	}
 }

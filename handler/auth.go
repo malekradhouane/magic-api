@@ -253,10 +253,12 @@ func (ctrl *controller) createToken(i *interfaces.Identity, expireAt time.Time) 
 		ctrl.ginJWT.IdentityKey: i.UserName,
 	})
 
-	// retrieves secret
-	secret, _ := ctrl.cman.Magic().Customer["SECRET"].(string)
-	if secret == "" {
-		return "", fmt.Errorf("jwt secret not configured")
+	// Resolve the secret through the shared validator so the same minimum
+	// length / placeholder checks enforced at startup also apply here,
+	// instead of only rejecting an empty value.
+	secret, err := ctrl.ginJWT.ResolveSecret()
+	if err != nil {
+		return "", err
 	}
 
 	// Sign and get the complete encoded token as a string
@@ -324,9 +326,13 @@ func (ctrl *controller) CompleteAuth(c *gin.Context) {
 		return
 	}
 
-	// Redirect to the frontend callback page with the tokens in query params
+	// Pass the tokens in the URL *fragment* rather than the query string.
+	// Fragments are never sent to the server (so they cannot leak into access
+	// logs) and are stripped from the Referer header by browsers, which
+	// closes the main token-leakage vectors of the OAuth redirect. The SPA
+	// reads them client-side from window.location.hash.
 	redirectURL := fmt.Sprintf(
-		"%s?token=%s&refresh_token=%s&expire=%s",
+		"%s#token=%s&refresh_token=%s&expire=%s",
 		callbackPath,
 		url.QueryEscape(token),
 		url.QueryEscape(token),

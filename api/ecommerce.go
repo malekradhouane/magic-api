@@ -263,6 +263,15 @@ type CreatePromoRequest struct {
 }
 
 // ============================================================================
+// SETTINGS
+// ============================================================================
+
+// UpdateSettingRequest is the payload for PUT /admin/settings/:key
+type UpdateSettingRequest struct {
+	Value map[string]interface{} `json:"value" binding:"required"`
+}
+
+// ============================================================================
 // PRODUCT IMPORT
 // ============================================================================
 

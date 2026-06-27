@@ -76,6 +76,13 @@ type AddressStore interface {
 	Delete(ctx context.Context, userID, id string) error
 }
 
+// SettingsStore manages application settings (key-value JSONB rows)
+type SettingsStore interface {
+	GetAll(ctx context.Context) ([]*interfaces.Setting, error)
+	GetByKey(ctx context.Context, key string) (*interfaces.Setting, error)
+	Upsert(ctx context.Context, key string, value interfaces.SettingsValue) (*interfaces.Setting, error)
+}
+
 // PromoStore manages promo code persistence
 type PromoStore interface {
 	Create(ctx context.Context, promo *interfaces.PromoCode) (*interfaces.PromoCode, error)

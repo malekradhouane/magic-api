@@ -30,7 +30,7 @@ func newTestOrderService(
 	addrSvc := NewAddressService(addressStore, nil)
 	return NewOrderService(
 		orderStore, productStore, promoSvc, userStore, addrSvc,
-		nil, "", "", "", nil,
+		nil, nil, "", "", "", nil,
 	)
 }
 
@@ -239,9 +239,9 @@ func TestOrderService_Create_WithShippingFee(t *testing.T) {
 	prodStore.On("DecrementVariantStock", mock.Anything, prodID.String(), "M", "Noir", 1).Return(nil)
 
 	orderStore.On("Create", mock.Anything, mock.MatchedBy(func(o *interfaces.Order) bool {
-		return o.ShippingFee == StandardShippingFee
+		return o.ShippingFee == DefaultStandardShippingFee
 	}), mock.Anything).Return(&interfaces.Order{
-		ID: uuid.New(), OrderNumber: "AFR-TEST", ShippingFee: StandardShippingFee,
+		ID: uuid.New(), OrderNumber: "AFR-TEST", ShippingFee: DefaultStandardShippingFee,
 	}, nil)
 
 	got, err := svc.Create(context.Background(), &api.CreateOrderRequest{
@@ -254,7 +254,7 @@ func TestOrderService_Create_WithShippingFee(t *testing.T) {
 		},
 	}, "")
 	require.NoError(t, err)
-	assert.Equal(t, StandardShippingFee, got.ShippingFee)
+	assert.Equal(t, DefaultStandardShippingFee, got.ShippingFee)
 }
 
 // ---------------------------------------------------------------------------
