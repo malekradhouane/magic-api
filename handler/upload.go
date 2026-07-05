@@ -83,7 +83,7 @@ func (h *UploadHandler) Presign(c *gin.Context) {
 		return
 	}
 
-	ext, err := validateContentType(req.ContentType)
+	canonicalCT, ext, err := validateContentType(req.ContentType)
 	if err != nil {
 		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
 		return
@@ -95,7 +95,12 @@ func (h *UploadHandler) Presign(c *gin.Context) {
 		return
 	}
 
-	presigned, err := h.r2.PresignPut(c.Request.Context(), key, req.ContentType)
+	// Sign the URL with the canonical (normalized) content type so that the
+	// value returned to the frontend is byte-for-byte identical to the one
+	// embedded in the SigV4 signature. The frontend MUST reuse
+	// presigned.Headers["Content-Type"] verbatim on the PUT request,
+	// otherwise the signature will not match and R2 returns 403.
+	presigned, err := h.r2.PresignPut(c.Request.Context(), key, canonicalCT)
 	if err != nil {
 		httpresp.NewErrorMessage(c, http.StatusInternalServerError, err.Error())
 		return
@@ -104,15 +109,31 @@ func (h *UploadHandler) Presign(c *gin.Context) {
 	httpresp.NewResult(c, http.StatusOK, presigned)
 }
 
-// validateContentType returns the canonical extension for a supported image
-// MIME type, or an error if it is not whitelisted.
-func validateContentType(ct string) (string, error) {
+// validateContentType normalizes and validates an image MIME type. It returns
+// the canonical content type (lowercased, trimmed, without parameters) that
+// must be used for signing AND sent back to the client, together with the
+// canonical file extension.
+//
+// Returning the canonical content type is what guarantees the SigV4 signature
+// stays consistent: whatever casing/whitespace/charset the client sends, the
+// signed value is always the normalized one.
+func validateContentType(ct string) (string, string, error) {
 	ct = strings.ToLower(strings.TrimSpace(ct))
+	// Drop any media type parameters such as "; charset=utf-8" that browsers
+	// or HTTP clients may append; they would otherwise break the signature.
+	if i := strings.IndexByte(ct, ';'); i >= 0 {
+		ct = strings.TrimSpace(ct[:i])
+	}
+	// "image/jpg" is not a registered MIME type; browsers emit "image/jpeg".
+	// Canonicalize it so the signed value matches what the browser will send.
+	if ct == "image/jpg" {
+		ct = "image/jpeg"
+	}
 	ext, ok := allowedImageContentTypes[ct]
 	if !ok {
-		return "", fmt.Errorf("unsupported content type: %s", ct)
+		return "", "", fmt.Errorf("unsupported content type: %s", ct)
 	}
-	return ext, nil
+	return ct, ext, nil
 }
 
 // buildObjectKey produces a collision-resistant object key under a folder.
