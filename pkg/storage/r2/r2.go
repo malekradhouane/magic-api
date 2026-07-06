@@ -18,6 +18,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Config carries the values required to talk to a single S3-compatible
@@ -142,7 +143,16 @@ func (c *Client) PresignPut(ctx context.Context, key, contentType string) (*Pres
 		Bucket:      aws.String(c.cfg.Bucket),
 		Key:         aws.String(key),
 		ContentType: aws.String(contentType),
-	}, s3.WithPresignExpires(c.cfg.PresignTTL))
+	}, s3.WithPresignExpires(c.cfg.PresignTTL), func(o *s3.PresignOptions) {
+		// The SDK's RemoveContentTypeHeader middleware strips Content-Type from
+		// the signed headers when ContentLength is 0 (always the case for presign).
+		// This causes R2 to reject the PUT with 403 SignatureDoesNotMatch because
+		// the client sends a Content-Type that was never signed.
+		// Force the header back into the signature via smithy-go.
+		o.ClientOptions = append(o.ClientOptions, func(o *s3.Options) {
+			o.APIOptions = append(o.APIOptions, smithyhttp.AddHeaderValue("Content-Type", contentType))
+		})
+	})
 	if err != nil {
 		return nil, fmt.Errorf("r2: presign put: %w", err)
 	}
