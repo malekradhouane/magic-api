@@ -108,6 +108,13 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 		// R2 does not yet support virtual-hosted style addressing for all
 		// regions; path-style is the safest default.
 		o.UsePathStyle = true
+		// Since aws-sdk-go-v2 (early 2025), PutObject computes a CRC32 checksum
+		// by default (RequestChecksumCalculation=when_supported). R2 does not
+		// support this and rejects presigned PUTs with "400 InvalidArgument:
+		// Authorization". Force checksums to be calculated only when explicitly
+		// required so the presigned URL stays compatible with R2.
+		o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
+		o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
 	})
 
 	return &Client{
