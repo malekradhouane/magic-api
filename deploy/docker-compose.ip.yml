@@ -1,16 +1,18 @@
 # ============================================================================
 # MAGIC — Phase IP (test, SANS domaine, SANS HTTPS)
 # ----------------------------------------------------------------------------
-# But : valider rapidement que l'API + PostgreSQL tournent sur le VPS,
-# accessibles via  http://<IP-du-VPS>:5002  (ou via Nginx port 80).
+# But : valider rapidement la stack complète sur le VPS :
+#   - API + PostgreSQL  →  http://<IP>:5002
+#   - Boutique (front)  →  http://<IP>:8080
+#   - Admin             →  http://<IP>:8081
 #
 # ⚠️ À NE PAS utiliser pour ouvrir la boutique au public :
 #    - pas de HTTPS (trafic en clair)
-#    - API exposée directement (pas de Cloudflare devant)
-#    Quand tu auras le domaine, repasse sur docker-compose.prod.yml.
+#    - services exposés directement (pas de Cloudflare devant)
+#    Quand tu auras le domaine, repasse sur docker-compose.prod.yml (+ Pages).
 #
 # Usage :
-#   cp .env.prod.example .env.ip   # puis remplir (BASE_URL/CORS en http://IP)
+#   cp .env.ip.example .env.ip   # puis remplir (remplacer <IP> partout)
 #   docker compose -f docker-compose.ip.yml --env-file .env.ip up -d --build
 # ============================================================================
 
@@ -62,6 +64,9 @@ services:
 
       MAGIC_CUSTOMER_SECRET: ${MAGIC_CUSTOMER_SECRET}
       GOTH_SESSION_KEY: ${GOTH_SESSION_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
 
       # En phase IP : http://<IP>  (pas de https, pas de domaine)
       BASE_URL: ${BASE_URL}
@@ -84,6 +89,42 @@ services:
     # via http://<IP>:5002 depuis ton PC / Netlify (test uniquement).
     ports:
       - "5002:5002"
+    networks:
+      - magic-internal
+
+  magic-front:
+    build:
+      context: ../../magic-front
+      dockerfile: Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
+        NUXT_PUBLIC_R2_BASE_URL: ${R2_PUBLIC_BASE_URL}
+    image: magic-front:local
+    container_name: magic-front
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/magic-front-ip.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - magic-internal
+
+  magic-admin:
+    build:
+      context: ../../magic-admin
+      dockerfile: Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
+        NUXT_PUBLIC_R2_BASE_URL: ${R2_PUBLIC_BASE_URL}
+        NUXT_IMAGE_PROVIDER: ${NUXT_IMAGE_PROVIDER:-ipx}
+    image: magic-admin:local
+    container_name: magic-admin
+    restart: unless-stopped
+    ports:
+      - "8081:3000"
+    environment:
+      - NUXT_PUBLIC_API_BASE_URL=${NUXT_PUBLIC_API_BASE_URL}
+      - NUXT_PUBLIC_R2_BASE_URL=${R2_PUBLIC_BASE_URL}
     networks:
       - magic-internal
 

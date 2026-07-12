@@ -13,5 +13,5 @@ config/config.yaml
 /bin/magic
 .DS_Store
 /deploy/.env.*
-/ignore
-/deploy
+/deploy/.env.local
+
