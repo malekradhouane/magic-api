@@ -230,6 +230,123 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/settings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "List all settings (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/interfaces.Setting"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/settings/{key}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get a settings group (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Settings key (general, shipping, notifications, seo)",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interfaces.Setting"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresp.HTTPError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update a settings group (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Settings key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Setting value",
+                        "name": "setting",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateSettingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interfaces.Setting"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/stats/overview": {
             "get": {
                 "produces": [
@@ -2451,6 +2568,18 @@ const docTemplate = `{
                 }
             }
         },
+        "api.UpdateSettingRequest": {
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
         "api.UpdateUserRequest": {
             "type": "object",
             "properties": {
@@ -2582,17 +2711,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "description": "the HTTP status",
                     "type": "integer",
                     "example": 500
                 },
                 "error": {
-                    "description": "the error description",
                     "type": "string",
                     "example": "internal server error"
                 },
                 "success": {
-                    "description": "wether the business action is successfull or not",
                     "type": "boolean",
                     "example": false
                 }
@@ -2602,17 +2728,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "description": "the HTTP status",
                     "type": "integer",
                     "example": 401
                 },
                 "error": {
-                    "description": "the error description",
                     "type": "string",
                     "example": "unauthorized"
                 },
                 "success": {
-                    "description": "wether the business action is successfull or not",
                     "type": "boolean",
                     "example": false
                 }
@@ -3104,6 +3227,27 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "interfaces.Setting": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "$ref": "#/definitions/interfaces.SettingsValue"
+                }
+            }
+        },
+        "interfaces.SettingsValue": {
+            "type": "object",
+            "additionalProperties": true
         },
         "interfaces.ShippingInfo": {
             "type": "object",

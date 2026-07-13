@@ -252,18 +252,23 @@ Pour **chacun** des deux projets (`magic-front`, puis `magic-admin`) :
 
 Cloudflare → **Workers & Pages** → Create → Pages → Connect to Git → choisis le repo.
 
-**magic-front (boutique)**
+**magic-front (boutique) — SSR**
 | Réglage | Valeur |
 |---------|--------|
 | Root directory | `magic-front` |
-| Build command | `npm run generate` |
+| Build command | `npm run build` |
 | Output directory | `.output/public` |
 | Variable env | `NUXT_PUBLIC_API_BASE_URL=https://api.votredomaine.tn` |
 | Variable env | `NUXT_PUBLIC_R2_BASE_URL=https://cdn.votredomaine.tn` |
 | Variable env | `NODE_VERSION=20` |
 | Domaine custom | `votredomaine.tn` |
 
-**magic-admin**
+> SSR : Cloudflare Pages détecte Nitro et déploie automatiquement le preset
+> `cloudflare-pages` (worker edge). Les appels API se font aussi côté serveur,
+> donc `NUXT_PUBLIC_API_BASE_URL` **doit** pointer vers l'API publique HTTPS
+> (jamais localhost), sinon le rendu serveur renvoie un 500 au refresh.
+
+**magic-admin — Static (SPA)**
 | Réglage | Valeur |
 |---------|--------|
 | Root directory | `magic-admin` |

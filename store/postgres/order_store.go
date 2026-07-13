@@ -56,7 +56,12 @@ func (os *OrderStore) Create(ctx context.Context, order *interfaces.Order, items
 	}
 
 	err := withTransaction(os.session.GetDB().WithContext(ctx), func(tx *gorm.DB) error {
-		if err := tx.Create(order).Error; err != nil {
+		// Insert the order WITHOUT auto-creating its associations. The Order
+		// model carries an `Items` slice (order.Items) that GORM would
+		// otherwise persist automatically here; we insert the items explicitly
+		// below, so we must skip the association to avoid inserting them twice
+		// (which caused a duplicate order_items_pkey violation).
+		if err := tx.Omit("Items").Create(order).Error; err != nil {
 			return fmt.Errorf("failed to create order: %w", err)
 		}
 
@@ -65,9 +70,7 @@ func (os *OrderStore) Create(ctx context.Context, order *interfaces.Order, items
 			if items[i].ID == uuid.Nil {
 				items[i].ID = uuid.New()
 			}
-		}
-		if len(items) > 0 {
-			if err := tx.Create(&items).Error; err != nil {
+			if err := tx.Create(&items[i]).Error; err != nil {
 				return fmt.Errorf("failed to create order items: %w", err)
 			}
 		}

@@ -186,6 +186,7 @@ func (os *OrderService) buildOrderItem(ctx context.Context, lineReq api.CreateOr
 	lineTotal := product.Price * float64(lineReq.Quantity)
 	productID := product.ID
 	return interfaces.OrderItem{
+		ID:           uuid.New(),
 		ProductID:    &productID,
 		ProductName:  product.Name,
 		ProductImage: pickMainImage(product.Images),

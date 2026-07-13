@@ -526,6 +526,14 @@ definitions:
           $ref: '#/definitions/api.CreateProductVariantRequest'
         type: array
     type: object
+  api.UpdateSettingRequest:
+    properties:
+      value:
+        additionalProperties: true
+        type: object
+    required:
+    - value
+    type: object
   api.UpdateUserRequest:
     properties:
       avatar_url:
@@ -615,30 +623,24 @@ definitions:
   httpresp.HTTPError:
     properties:
       code:
-        description: the HTTP status
         example: 500
         type: integer
       error:
-        description: the error description
         example: internal server error
         type: string
       success:
-        description: wether the business action is successfull or not
         example: false
         type: boolean
     type: object
   httpresp.HTTPError401:
     properties:
       code:
-        description: the HTTP status
         example: 401
         type: integer
       error:
-        description: the error description
         example: unauthorized
         type: string
       success:
-        description: wether the business action is successfull or not
         example: false
         type: boolean
     type: object
@@ -972,6 +974,20 @@ definitions:
       usage_limit:
         type: integer
     type: object
+  interfaces.Setting:
+    properties:
+      created_at:
+        type: string
+      key:
+        type: string
+      updated_at:
+        type: string
+      value:
+        $ref: '#/definitions/interfaces.SettingsValue'
+    type: object
+  interfaces.SettingsValue:
+    additionalProperties: true
+    type: object
   interfaces.ShippingInfo:
     properties:
       address:
@@ -1255,6 +1271,83 @@ paths:
       summary: Delete promo code (admin)
       tags:
       - promo
+  /admin/settings:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/interfaces.Setting'
+            type: array
+      summary: List all settings (admin)
+      tags:
+      - settings
+  /admin/settings/{key}:
+    get:
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Settings key (general, shipping, notifications, seo)
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interfaces.Setting'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpresp.HTTPError'
+      summary: Get a settings group (admin)
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Settings key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Setting value
+        in: body
+        name: setting
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interfaces.Setting'
+      summary: Update a settings group (admin)
+      tags:
+      - settings
   /admin/stats/overview:
     get:
       parameters:
