@@ -82,7 +82,7 @@ func (uh *UserHandler) SetupUsersRoutes(g *gin.RouterGroup) *gin.RouterGroup {
 	superAdminUsers := g.Group("/" + endpoint)
 	{
 		superAdminUsers.Use(uh.auth)
-		superAdminUsers.Use(middleware.RequireSuperAdmin())
+		superAdminUsers.Use(middleware.RequireAdmin())
 		superAdminUsers.POST("/admins", uh.CreateAdmin)
 	}
 
