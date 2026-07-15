@@ -39,11 +39,11 @@ func NewGinJwt(cman configmanager.ManagerContract, userStore types.UserStore) (*
 	}, nil
 }
 
-// Token TTL defaults. 15 minutes for access follows OWASP guidance for stateless
-// bearer tokens; the refresh window is longer so users do not need to re-enter
-// credentials between sessions.
+// Token TTL defaults. 1 hour for access balances security with usability so
+// active users are not logged out mid-session; the refresh window is longer so
+// users do not need to re-enter credentials between sessions.
 const (
-	defaultAccessTokenTTL = 15 * time.Minute
+	defaultAccessTokenTTL = 1 * time.Hour
 	defaultRefreshWindow  = 7 * 24 * time.Hour
 )
 

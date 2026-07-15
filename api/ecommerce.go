@@ -64,6 +64,10 @@ type CreateProductImageRequest struct {
 	Alt       string `json:"alt"`
 	Position  int    `json:"position"`
 	IsPrimary bool   `json:"is_primary"`
+	// Color links the image to a specific product color (matches
+	// ProductColor.Name). Empty means the image is generic and shown for
+	// every color.
+	Color string `json:"color"`
 }
 
 type CreateProductSizeRequest struct {

@@ -58,6 +58,12 @@ definitions:
     properties:
       alt:
         type: string
+      color:
+        description: |-
+          Color links the image to a specific product color (matches
+          ProductColor.Name). Empty means the image is generic and shown for
+          every color.
+        type: string
       is_primary:
         type: boolean
       position:
@@ -888,6 +894,12 @@ definitions:
   interfaces.ProductImage:
     properties:
       alt:
+        type: string
+      color:
+        description: |-
+          Color links the image to a specific product color (matches
+          ProductColor.Name). Empty means the image is generic and shown for
+          every color.
         type: string
       created_at:
         type: string

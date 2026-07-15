@@ -64,6 +64,7 @@ func (ps *ProductService) Create(ctx context.Context, req *api.CreateProductRequ
 			Alt:       img.Alt,
 			Position:  img.Position,
 			IsPrimary: img.IsPrimary,
+			Color:     img.Color,
 		})
 	}
 
@@ -233,6 +234,7 @@ func (ps *ProductService) Update(ctx context.Context, id string, req *api.Update
 			Alt:       img.Alt,
 			Position:  img.Position,
 			IsPrimary: img.IsPrimary,
+			Color:     img.Color,
 		})
 	}
 	if err := ps.store.UpsertImages(ctx, id, images); err != nil {

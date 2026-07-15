@@ -91,6 +91,10 @@ type ProductImage struct {
 	Alt       string    `gorm:"type:varchar(255)" json:"alt"`
 	Position  int       `gorm:"not null;default:0" json:"position"`
 	IsPrimary bool      `gorm:"not null;default:false" json:"is_primary"`
+	// Color links the image to a specific product color (matches
+	// ProductColor.Name). Empty means the image is generic and shown for
+	// every color.
+	Color string `gorm:"type:varchar(100);not null;default:''" json:"color"`
 }
 
 func (ProductImage) TableName() string { return "product_images" }

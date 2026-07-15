@@ -1871,6 +1871,10 @@ const docTemplate = `{
                 "alt": {
                     "type": "string"
                 },
+                "color": {
+                    "description": "Color links the image to a specific product color (matches\nProductColor.Name). Empty means the image is generic and shown for\nevery color.",
+                    "type": "string"
+                },
                 "is_primary": {
                     "type": "boolean"
                 },
@@ -3097,6 +3101,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "alt": {
+                    "type": "string"
+                },
+                "color": {
+                    "description": "Color links the image to a specific product color (matches\nProductColor.Name). Empty means the image is generic and shown for\nevery color.",
                     "type": "string"
                 },
                 "created_at": {
