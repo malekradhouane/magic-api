@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -140,10 +141,13 @@ func (us *UserStore) FindByEmailAndProvider(ctx context.Context, email string, p
 	return u, nil
 }
 
-// Authenticate verifies credentials and returns the user
+// Authenticate verifies credentials and returns the user. The login
+// identifier is matched against the email address (case-insensitive), which is
+// what every client submits in the "username" credential field.
 func (us *UserStore) Authenticate(ctx context.Context, login *interfaces.Credential) (*interfaces.User, error) {
 	user := new(interfaces.User)
-	err := us.session.GetDB().WithContext(ctx).Model(&interfaces.User{}).Where("username = ?", login.Username).Take(user).Error
+	email := strings.ToLower(strings.TrimSpace(login.Username))
+	err := us.session.GetDB().WithContext(ctx).Model(&interfaces.User{}).Where("email = ?", email).Take(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNoSuchEntity
