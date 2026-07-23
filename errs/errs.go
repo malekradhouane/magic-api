@@ -25,6 +25,9 @@ var (
 	// Generic
 	ErrNoSuchEntity = errors.New("no such entity")
 	ErrEmptyUpdate  = errors.New("no fields to update")
+
+	// Promo-related
+	ErrPromoUsageLimitReached = errors.New("promo usage limit reached")
 )
 
 // IsNoSuchEntityError checks if error is ErrNoSuchEntity

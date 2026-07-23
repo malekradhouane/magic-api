@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/malekradhouane/magic/api"
+	"github.com/malekradhouane/magic/errs"
 	"github.com/malekradhouane/magic/middleware"
 	"github.com/malekradhouane/magic/service"
 	"github.com/malekradhouane/magic/utils/httpresp"
@@ -14,13 +15,16 @@ import (
 
 // PromoHandler exposes promo-code endpoints
 type PromoHandler struct {
-	service *service.PromoService
-	auth    gin.HandlerFunc
+	service    *service.PromoService
+	auth       gin.HandlerFunc
+	validateRL gin.HandlerFunc
 }
 
-// NewPromoHandler constructs a PromoHandler
-func NewPromoHandler(s *service.PromoService, auth gin.HandlerFunc) *PromoHandler {
-	return &PromoHandler{service: s, auth: auth}
+// NewPromoHandler constructs a PromoHandler. validateRL rate-limits the public
+// validate endpoint to thwart promo-code enumeration/brute-force; pass nil to
+// disable (e.g. in tests).
+func NewPromoHandler(s *service.PromoService, auth gin.HandlerFunc, validateRL gin.HandlerFunc) *PromoHandler {
+	return &PromoHandler{service: s, auth: auth, validateRL: validateRL}
 }
 
 // SetupRoutes registers promo routes
@@ -32,15 +36,21 @@ func NewPromoHandler(s *service.PromoService, auth gin.HandlerFunc) *PromoHandle
 //
 //	POST /admin/promos
 //	GET  /admin/promos
+//	PUT  /admin/promos/:id
 //	DELETE /admin/promos/:id
 func (h *PromoHandler) SetupRoutes(g *gin.RouterGroup) {
-	g.POST("/promo/validate", h.Validate)
+	if h.validateRL != nil {
+		g.POST("/promo/validate", h.validateRL, h.Validate)
+	} else {
+		g.POST("/promo/validate", h.Validate)
+	}
 
 	admin := g.Group("/admin/promos")
 	admin.Use(h.auth)
 	admin.Use(middleware.RequireAdmin())
 	admin.POST("", h.Create)
 	admin.GET("", h.List)
+	admin.PUT("/:id", h.Update)
 	admin.DELETE("/:id", h.Delete)
 }
 
@@ -113,6 +123,39 @@ func (h *PromoHandler) List(c *gin.Context) {
 		return
 	}
 	httpresp.NewResult(c, http.StatusOK, promos)
+}
+
+// Update updates a promo code (admin)
+// @Summary Update promo code (admin)
+// @Tags promo
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Promo ID"
+// @Param promo body api.UpdatePromoRequest true "Promo"
+// @Success 200 {object} interfaces.PromoCode
+// @Router /admin/promos/{id} [put]
+func (h *PromoHandler) Update(c *gin.Context) {
+	id := c.Param("id")
+	var req api.UpdatePromoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	promo, err := h.service.Update(c.Request.Context(), id, &req)
+	if err != nil {
+		if errs.IsNoSuchEntityError(err) {
+			httpresp.NewErrorMessage(c, http.StatusNotFound, "Code promo introuvable")
+			return
+		}
+		if errs.IsEmptyUpdateError(err) {
+			httpresp.NewErrorMessage(c, http.StatusBadRequest, "Aucun champ à mettre à jour")
+			return
+		}
+		httpresp.NewErrorMessage(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	httpresp.NewResult(c, http.StatusOK, promo)
 }
 
 // Delete removes a promo code (admin)

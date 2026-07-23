@@ -274,10 +274,24 @@ func (m *MockPromoStore) GetByCode(ctx context.Context, code string) (*interface
 	}
 	return nil, args.Error(1)
 }
+func (m *MockPromoStore) GetByID(ctx context.Context, id string) (*interfaces.PromoCode, error) {
+	args := m.Called(ctx, id)
+	if v := args.Get(0); v != nil {
+		return v.(*interfaces.PromoCode), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
 func (m *MockPromoStore) List(ctx context.Context) ([]*interfaces.PromoCode, error) {
 	args := m.Called(ctx)
 	if v := args.Get(0); v != nil {
 		return v.([]*interfaces.PromoCode), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+func (m *MockPromoStore) Update(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.PromoCode, error) {
+	args := m.Called(ctx, id, fields)
+	if v := args.Get(0); v != nil {
+		return v.(*interfaces.PromoCode), args.Error(1)
 	}
 	return nil, args.Error(1)
 }

@@ -76,6 +76,43 @@ func (ps *PromoStore) GetByCode(ctx context.Context, code string) (*interfaces.P
 	return p, nil
 }
 
+// GetByID retrieves a promo code by its UUID
+func (ps *PromoStore) GetByID(ctx context.Context, id string) (*interfaces.PromoCode, error) {
+	if id == "" {
+		return nil, fmt.Errorf("promo ID is required")
+	}
+	p := new(interfaces.PromoCode)
+	err := ps.session.GetDB().WithContext(ctx).
+		Where("id = ?", id).
+		Take(p).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrNoSuchEntity
+		}
+		return nil, fmt.Errorf("failed to get promo code: %w", err)
+	}
+	return p, nil
+}
+
+// Update applies a partial update to a promo code and returns the fresh row
+func (ps *PromoStore) Update(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.PromoCode, error) {
+	if id == "" {
+		return nil, fmt.Errorf("promo ID is required")
+	}
+	if len(fields) == 0 {
+		return nil, errs.ErrEmptyUpdate
+	}
+	if code, ok := fields["code"].(string); ok {
+		fields["code"] = strings.ToUpper(code)
+	}
+
+	db := ps.session.GetDB().WithContext(ctx)
+	if err := db.Model(&interfaces.PromoCode{}).Where("id = ?", id).Updates(fields).Error; err != nil {
+		return nil, fmt.Errorf("failed to update promo code: %w", err)
+	}
+	return ps.GetByID(ctx, id)
+}
+
 // List returns all active promo codes
 func (ps *PromoStore) List(ctx context.Context) ([]*interfaces.PromoCode, error) {
 	var promos []*interfaces.PromoCode
@@ -87,14 +124,21 @@ func (ps *PromoStore) List(ctx context.Context) ([]*interfaces.PromoCode, error)
 	return promos, nil
 }
 
-// IncrementUsage atomically increments usage_count
+// IncrementUsage atomically increments usage_count, but only while the global
+// usage_limit has not been reached. The WHERE clause makes the check-and-set a
+// single statement, so concurrent orders can never push usage_count past the
+// configured limit (guards against a check-then-act race). Returns
+// errs.ErrPromoUsageLimitReached when the limit was already exhausted.
 func (ps *PromoStore) IncrementUsage(ctx context.Context, promoID string) error {
 	res := ps.session.GetDB().WithContext(ctx).
 		Model(&interfaces.PromoCode{}).
-		Where("id = ?", promoID).
+		Where("id = ? AND (usage_limit IS NULL OR usage_count < usage_limit)", promoID).
 		Update("usage_count", gorm.Expr("usage_count + 1"))
 	if res.Error != nil {
 		return fmt.Errorf("failed to increment usage: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return errs.ErrPromoUsageLimitReached
 	}
 	return nil
 }

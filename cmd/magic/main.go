@@ -115,6 +115,9 @@ func main() {
 	emailAuthLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
 	registerLimiter := middleware.NewRateLimiter(5, 1*time.Hour)
 	guestOrderLimiter := middleware.NewRateLimiter(5, 15*time.Minute)
+	// promoValidateLimiter: 20 attempts / minute / IP — lets a genuine shopper
+	// retry a mistyped code while throttling automated promo-code enumeration.
+	promoValidateLimiter := middleware.NewRateLimiter(40, 1*time.Minute)
 
 	loginRL := middleware.LoginRateLimit(ipAuthLimiter, emailAuthLimiter)
 	genericAuthRL := middleware.LoginRateLimit(ipAuthLimiter, nil)
@@ -202,7 +205,7 @@ func main() {
 	addressHandler := handler.NewAddressHandler(addressService, authMiddleware.MiddlewareFunc())
 	addressHandler.SetupRoutes(api)
 
-	promoHandler := handler.NewPromoHandler(promoService, authMiddleware.MiddlewareFunc())
+	promoHandler := handler.NewPromoHandler(promoService, authMiddleware.MiddlewareFunc(), promoValidateLimiter.Middleware())
 	promoHandler.SetupRoutes(api)
 
 	// Dashboard statistics (admin only)

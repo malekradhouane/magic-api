@@ -266,6 +266,22 @@ type CreatePromoRequest struct {
 	IsActive      bool     `json:"is_active"`
 }
 
+// UpdatePromoRequest used by admins to partially update a promo code.
+// All fields are optional; only the provided ones are modified.
+type UpdatePromoRequest struct {
+	Code          *string  `json:"code,omitempty"`
+	Description   *string  `json:"description,omitempty"`
+	DiscountType  *string  `json:"discount_type,omitempty"`
+	DiscountValue *float64 `json:"discount_value,omitempty"`
+	MinOrderTotal *float64 `json:"min_order_total,omitempty"`
+	MaxDiscount   *float64 `json:"max_discount,omitempty"`
+	UsageLimit    *int     `json:"usage_limit,omitempty"`
+	PerUserLimit  *int     `json:"per_user_limit,omitempty"`
+	StartsAt      *string  `json:"starts_at,omitempty"`
+	ExpiresAt     *string  `json:"expires_at,omitempty"`
+	IsActive      *bool    `json:"is_active,omitempty"`
+}
+
 // ============================================================================
 // SETTINGS
 // ============================================================================

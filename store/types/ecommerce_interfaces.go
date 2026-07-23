@@ -87,7 +87,9 @@ type SettingsStore interface {
 type PromoStore interface {
 	Create(ctx context.Context, promo *interfaces.PromoCode) (*interfaces.PromoCode, error)
 	GetByCode(ctx context.Context, code string) (*interfaces.PromoCode, error)
+	GetByID(ctx context.Context, id string) (*interfaces.PromoCode, error)
 	List(ctx context.Context) ([]*interfaces.PromoCode, error)
+	Update(ctx context.Context, id string, fields map[string]interface{}) (*interfaces.PromoCode, error)
 	IncrementUsage(ctx context.Context, promoID string) error
 	RecordUsage(ctx context.Context, usage *interfaces.PromoUsage) error
 	CountUserUsage(ctx context.Context, promoID, userID string) (int64, error)

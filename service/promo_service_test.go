@@ -92,6 +92,118 @@ func TestPromoService_Create_InvalidExpiresAt(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid expires_at")
 }
 
+func TestPromoService_Create_RejectsPercentageOver100(t *testing.T) {
+	t.Parallel()
+	svc := NewPromoService(new(MockPromoStore), nil)
+
+	_, err := svc.Create(context.Background(), &api.CreatePromoRequest{
+		Code:          "TOOBIG",
+		DiscountType:  "percentage",
+		DiscountValue: 150,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "between 0 and 100")
+}
+
+func TestPromoService_Create_RejectsUnknownDiscountType(t *testing.T) {
+	t.Parallel()
+	svc := NewPromoService(new(MockPromoStore), nil)
+
+	_, err := svc.Create(context.Background(), &api.CreatePromoRequest{
+		Code:          "WEIRD",
+		DiscountType:  "banana",
+		DiscountValue: 10,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid discount_type")
+}
+
+func TestPromoService_Create_RejectsExpiryBeforeStart(t *testing.T) {
+	t.Parallel()
+	svc := NewPromoService(new(MockPromoStore), nil)
+
+	starts := "2026-12-31T00:00:00Z"
+	expires := "2026-01-01T00:00:00Z"
+	_, err := svc.Create(context.Background(), &api.CreatePromoRequest{
+		Code:          "REVERSED",
+		DiscountType:  "fixed",
+		DiscountValue: 5,
+		StartsAt:      &starts,
+		ExpiresAt:     &expires,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "expires_at cannot be before starts_at")
+}
+
+// ---------------------------------------------------------------------------
+// PromoService.Update
+// ---------------------------------------------------------------------------
+
+func TestPromoService_Update_Success(t *testing.T) {
+	t.Parallel()
+	store := new(MockPromoStore)
+	svc := NewPromoService(store, nil)
+
+	id := uuid.New()
+	current := &interfaces.PromoCode{
+		ID:            id,
+		Code:          "SUMMER10",
+		DiscountType:  interfaces.PromoTypePercentage,
+		DiscountValue: 10,
+		IsActive:      true,
+	}
+	store.On("GetByID", mock.Anything, id.String()).Return(current, nil)
+	store.On("Update", mock.Anything, id.String(), mock.MatchedBy(func(f map[string]interface{}) bool {
+		return f["is_active"] == false && f["discount_value"] == 25.0
+	})).Return(&interfaces.PromoCode{ID: id, Code: "SUMMER10", DiscountValue: 25, IsActive: false}, nil)
+
+	active := false
+	val := 25.0
+	got, err := svc.Update(context.Background(), id.String(), &api.UpdatePromoRequest{
+		DiscountValue: &val,
+		IsActive:      &active,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 25.0, got.DiscountValue)
+	store.AssertExpectations(t)
+}
+
+func TestPromoService_Update_RejectsInvalidPercentage(t *testing.T) {
+	t.Parallel()
+	store := new(MockPromoStore)
+	svc := NewPromoService(store, nil)
+
+	id := uuid.New()
+	store.On("GetByID", mock.Anything, id.String()).Return(&interfaces.PromoCode{
+		ID:            id,
+		DiscountType:  interfaces.PromoTypePercentage,
+		DiscountValue: 10,
+	}, nil)
+
+	val := 250.0
+	_, err := svc.Update(context.Background(), id.String(), &api.UpdatePromoRequest{
+		DiscountValue: &val,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "between 0 and 100")
+}
+
+func TestPromoService_Update_NotFound(t *testing.T) {
+	t.Parallel()
+	store := new(MockPromoStore)
+	svc := NewPromoService(store, nil)
+
+	id := uuid.New()
+	store.On("GetByID", mock.Anything, id.String()).Return(nil, errs.ErrNoSuchEntity)
+
+	active := true
+	_, err := svc.Update(context.Background(), id.String(), &api.UpdatePromoRequest{
+		IsActive: &active,
+	})
+	require.Error(t, err)
+	assert.True(t, errs.IsNoSuchEntityError(err))
+}
+
 // ---------------------------------------------------------------------------
 // PromoService.Validate
 // ---------------------------------------------------------------------------
