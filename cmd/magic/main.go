@@ -118,6 +118,9 @@ func main() {
 	// promoValidateLimiter: 20 attempts / minute / IP — lets a genuine shopper
 	// retry a mistyped code while throttling automated promo-code enumeration.
 	promoValidateLimiter := middleware.NewRateLimiter(40, 1*time.Minute)
+	// consentSubmitLimiter: 10 submissions / minute / IP — throttles spam on the
+	// public contact and newsletter endpoints.
+	consentSubmitLimiter := middleware.NewRateLimiter(20, 1*time.Minute)
 
 	loginRL := middleware.LoginRateLimit(ipAuthLimiter, emailAuthLimiter)
 	genericAuthRL := middleware.LoginRateLimit(ipAuthLimiter, nil)
@@ -216,6 +219,23 @@ func main() {
 	// Application settings (admin only)
 	settingsHandler := handler.NewSettingsHandler(settingsService, authMiddleware.MiddlewareFunc())
 	settingsHandler.SetupRoutes(api)
+
+	// Consent proofs: public contact/newsletter submission + admin retrieval.
+	consentService := service.NewConsentService(
+		store.Consents(),
+		settingsService,
+		rr.mailer,
+		mailjetCfg.FromName,
+		mailjetCfg.FromEmail,
+		frontendURL,
+		rr.logger,
+	)
+	consentHandler := handler.NewConsentHandler(
+		consentService,
+		authMiddleware.MiddlewareFunc(),
+		consentSubmitLimiter.Middleware(),
+	)
+	consentHandler.SetupRoutes(api)
 
 	// Uploads (presigned URLs to Cloudflare R2). r2Client may be nil if R2
 	// is not configured; the handler will then return 503 to clients.

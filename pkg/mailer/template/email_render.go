@@ -19,6 +19,12 @@ var orderConfirmationTpl []byte
 //go:embed orderShipped.html
 var orderShippedTpl []byte
 
+//go:embed contactNotification.html
+var contactNotificationTpl []byte
+
+//go:embed newsletterWelcome.html
+var newsletterWelcomeTpl []byte
+
 // OrderConfirmationData is passed to the order confirmation email template.
 type OrderConfirmationData struct {
 	CustomerName    string
@@ -56,6 +62,21 @@ type OrderShippedData struct {
 	OrderURL       string
 	TrackingNumber string
 	HasTracking    bool
+}
+
+// ContactNotificationData is passed to the contact notification email template.
+type ContactNotificationData struct {
+	Name       string
+	Email      string
+	Subject    string
+	Message    string
+	ReceivedAt string
+	IPAddress  string
+}
+
+// NewsletterWelcomeData is passed to the newsletter welcome email template.
+type NewsletterWelcomeData struct {
+	PrivacyURL string
 }
 
 // RenderInviteUser returns the activateAccount HTML with the link injected
@@ -109,6 +130,16 @@ func RenderOrderConfirmation(data OrderConfirmationData) (string, error) {
 // RenderOrderShipped returns the order shipped HTML.
 func RenderOrderShipped(data OrderShippedData) (string, error) {
 	return renderTemplate("orderShipped", orderShippedTpl, data)
+}
+
+// RenderContactNotification returns the contact notification HTML.
+func RenderContactNotification(data ContactNotificationData) (string, error) {
+	return renderTemplate("contactNotification", contactNotificationTpl, data)
+}
+
+// RenderNewsletterWelcome returns the newsletter welcome HTML.
+func RenderNewsletterWelcome(data NewsletterWelcomeData) (string, error) {
+	return renderTemplate("newsletterWelcome", newsletterWelcomeTpl, data)
 }
 
 func renderTemplate(name string, tplBytes []byte, data interface{}) (string, error) {

@@ -25,6 +25,7 @@ type StoreSet struct {
 	Address  types.AddressStore
 	Stats    types.StatsStore
 	Settings types.SettingsStore
+	Consent  types.ConsentStore
 }
 
 // CreatePostgresStores initializes all stores backed by PostgreSQL
@@ -68,6 +69,10 @@ func CreatePostgresStores(opts *Options) error {
 			err = fmt.Errorf("CreateStores: NewSettingsStore err: %w", err)
 			return
 		}
+		if stores.Consent, err = postgres.NewConsentStore(); err != nil {
+			err = fmt.Errorf("CreateStores: NewConsentStore err: %w", err)
+			return
+		}
 	})
 
 	return err
@@ -96,3 +101,6 @@ func Stats() types.StatsStore { return stores.Stats }
 
 // Settings returns the application settings store
 func Settings() types.SettingsStore { return stores.Settings }
+
+// Consents returns the consent proof store
+func Consents() types.ConsentStore { return stores.Consent }

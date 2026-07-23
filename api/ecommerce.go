@@ -300,3 +300,36 @@ type ImportProductsRequest struct {
 	File   string `form:"file" binding:"required"` // CSV file path or identifier
 	Gender string `form:"gender"`                  // Optional gender for logging
 }
+
+// ============================================================================
+// CONSENT
+// ============================================================================
+
+// ContactRequest is the public contact-form payload. Consent is mandatory and
+// its proof (date, text, IP, user agent) is stored server-side.
+type ContactRequest struct {
+	Name    string `json:"name" valid:"required"`
+	Email   string `json:"email" valid:"required,email"`
+	Subject string `json:"subject" valid:"required"`
+	Message string `json:"message" valid:"required"`
+	Consent bool   `json:"consent"`
+}
+
+// NewsletterSubscribeRequest is the public newsletter subscription payload.
+// Consent is implied by submitting the form and its proof is stored server-side.
+type NewsletterSubscribeRequest struct {
+	Email   string `json:"email" valid:"required,email"`
+	Consent bool   `json:"consent"`
+}
+
+// ConsentResponse acknowledges a stored consent record.
+type ConsentResponse struct {
+	ID      string `json:"id"`
+	Message string `json:"message"`
+}
+
+// ConsentsResponse lists stored consent proofs (admin only).
+type ConsentsResponse struct {
+	Consents []*interfaces.Consent `json:"consents"`
+	Total    int64                 `json:"total"`
+}

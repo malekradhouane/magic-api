@@ -95,3 +95,9 @@ type PromoStore interface {
 	CountUserUsage(ctx context.Context, promoID, userID string) (int64, error)
 	Delete(ctx context.Context, id string) error
 }
+
+// ConsentStore persists consent proofs for contact and newsletter submissions.
+type ConsentStore interface {
+	Create(ctx context.Context, consent *interfaces.Consent) (*interfaces.Consent, error)
+	List(ctx context.Context, consentType string, limit, offset int) ([]*interfaces.Consent, int64, error)
+}

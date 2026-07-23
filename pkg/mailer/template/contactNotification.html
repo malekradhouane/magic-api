@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nouveau message de contact - Magic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            width: 180px;
+            height: auto;
+        }
+
+        .content h1 {
+            color: #333333;
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .field {
+            margin-bottom: 14px;
+            font-size: 15px;
+            color: #666666;
+            line-height: 1.5;
+        }
+
+        .field .label {
+            color: #333333;
+            font-weight: bold;
+        }
+
+        .message-box {
+            background-color: #f9f9f9;
+            border-left: 3px solid #4B5563;
+            padding: 15px;
+            margin-top: 8px;
+            color: #444444;
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">
+        <img alt="Magic Logo" src="https://10ym9.mjt.lu/img2/10ym9/dc35bca0-7c81-4a5f-8762-866c27e12d0a/content">
+    </div>
+    <div class="content">
+        <h1>Nouveau message de contact</h1>
+
+        <div class="field"><span class="label">Nom :</span> {{.Name}}</div>
+        <div class="field"><span class="label">Email :</span> {{.Email}}</div>
+        <div class="field"><span class="label">Sujet :</span> {{.Subject}}</div>
+
+        <div class="field">
+            <span class="label">Message :</span>
+            <div class="message-box">{{.Message}}</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Reçu le {{.ReceivedAt}}{{if .IPAddress}} — IP : {{.IPAddress}}{{end}}</p>
+        <p>© 2025 Magic. Tous droits réservés.</p>
+    </div>
+</div>
+</body>
+</html>
