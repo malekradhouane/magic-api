@@ -60,12 +60,12 @@
     </table>
 
     <div class="totals">
-        <div class="row"><span>Sous-total</span><span>{{.Subtotal}}</span></div>
-        <div class="row"><span>Livraison</span><span>{{.ShippingFee}}</span></div>
+        <div class="row"><span>Sous-total: </span><span>{{.Subtotal}}</span></div>
+        <div class="row"><span>Livraison: </span><span>{{.ShippingFee}}</span></div>
         {{if .HasDiscount}}
-        <div class="row"><span>Remise{{if .HasPromo}} ({{.PromoCode}}){{end}}</span><span>-{{.DiscountAmount}}</span></div>
+        <div class="row"><span>Remise{{if .HasPromo}} ({{.PromoCode}}){{end}}: </span><span> -{{.DiscountAmount}}</span></div>
         {{end}}
-        <div class="row total"><span>Total</span><span>{{.TotalPrice}}</span></div>
+        <div class="row total"><span>Total: </span><span>{{.TotalPrice}}</span></div>
     </div>
 
     <div class="block">
@@ -81,7 +81,7 @@
 
     <a class="button" href="{{.OrderURL}}">Suivre ma commande</a>
 
-    <p style="text-align: center; font-size: 13px;">Pour toute question, répondez à cet e-mail ou contactez-nous.</p>
+    <p style="text-align: center; font-size: 13px;">Pour toute question contactez-nous.</p>
 
     <div class="footer">
         <p>© Magic. Tous droits réservés.</p>
